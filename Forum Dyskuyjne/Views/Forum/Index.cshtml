@@ -1,0 +1,91 @@
+@model ForumIndexViewModel
+@{
+    ViewData["Title"] = "Kategorie i fora";
+}
+
+<div class="section-head">
+    <div>
+        <h1 class="section-title">Kategorie i fora</h1>
+        <p class="section-sub">Wybierz forum, aby przejść do listy jego wątków.</p>
+    </div>
+</div>
+
+@if (Model.Sections.Count == 0)
+{
+    <div class="empty-state">
+        <i class="bi bi-folder2-open"></i>
+        Nie zdefiniowano jeszcze żadnych forów.
+    </div>
+}
+
+@foreach (var categorySection in Model.Sections)
+{
+    <section class="category-block">
+        <div class="category-head">
+            <h4>@categorySection.Category.Name</h4>
+            @if (!string.IsNullOrEmpty(categorySection.Category.Description))
+            {
+                <span class="category-desc">@categorySection.Category.Description</span>
+            }
+        </div>
+
+        @if (categorySection.Forums.Count == 0)
+        {
+            <div class="empty-state">
+                <i class="bi bi-inbox"></i>
+                W tej kategorii nie ma jeszcze forów.
+            </div>
+        }
+        else
+        {
+            <div class="forum-grid">
+                @foreach (var forum in categorySection.Forums)
+                {
+                    <article class="forum-card">
+                        <a class="forum-title"
+                           asp-action="Threads" asp-route-forumId="@forum.Id">@forum.Name</a>
+                        <p class="forum-desc">@forum.Description</p>
+
+                        <div class="d-flex flex-wrap gap-2">
+                            @if (forum.AllowAnonymousView)
+                            {
+                                <span class="badge-outline"><i class="bi bi-eye me-1"></i>Anonim: podgląd</span>
+                            }
+                            else
+                            {
+                                <span class="badge-outline"><i class="bi bi-eye-slash me-1"></i>Anonim: brak podglądu</span>
+                            }
+                            @if (forum.AllowAnonymousPost)
+                            {
+                                <span class="badge-soft"><i class="bi bi-pencil me-1"></i>Anonim: pisanie</span>
+                            }
+                            @if (forum.ModeratorNames.Count > 0)
+                            {
+                                <span class="badge-outline" title="@string.Join(", ", forum.ModeratorNames)">
+                                    <i class="bi bi-people me-1"></i>Moderatorzy (@forum.ModeratorNames.Count)
+                                </span>
+                            }
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(forum.LastThreadTitle))
+                        {
+                            <div class="last-thread">
+                                <span class="text-muted-site">Ostatni wątek:</span>
+                                <a asp-action="Thread" asp-route-id="@forum.LastThreadId">@forum.LastThreadTitle</a>
+                            </div>
+                        }
+
+                        <div class="forum-meta">
+                            <span><i class="bi bi-collection"></i>@forum.ThreadCount wątków</span>
+                            <span><i class="bi bi-envelope"></i>@forum.MessageCount wiadomości</span>
+                            @if (forum.LastThreadAt is not null)
+                            {
+                                <span><i class="bi bi-clock"></i>@forum.LastThreadAt.Value.ToString("dd.MM.yyyy")</span>
+                            }
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    </section>
+}

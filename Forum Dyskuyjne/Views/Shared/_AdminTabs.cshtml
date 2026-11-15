@@ -1,0 +1,24 @@
+@*
+    Nawigacja sekcji panelu administracyjnego (powielana w widokach Admin/*).
+    Aktywna pozycja: ViewData["AdminTab"] = dashboard | users | categories | forums | announcements
+*@
+@{
+    var activeTab = ViewData["AdminTab"]?.ToString();
+}
+<nav class="admin-tabs" aria-label="Sekcje panelu administracyjnego">
+    <a class="nav-link @(activeTab == "dashboard" ? "active" : "")" asp-controller="Admin" asp-action="Index">
+        <i class="bi bi-speedometer2"></i>Pulpit
+    </a>
+    <a class="nav-link @(activeTab == "users" ? "active" : "")" asp-controller="Admin" asp-action="Users">
+        <i class="bi bi-people"></i>Użytkownicy
+    </a>
+    <a class="nav-link @(activeTab == "categories" ? "active" : "")" asp-controller="Admin" asp-action="Categories">
+        <i class="bi bi-folder"></i>Kategorie
+    </a>
+    <a class="nav-link @(activeTab == "forums" ? "active" : "")" asp-controller="Admin" asp-action="Forums">
+        <i class="bi bi-diagram-3"></i>Fora
+    </a>
+    <a class="nav-link @(activeTab == "announcements" ? "active" : "")" asp-controller="Admin" asp-action="Announcements">
+        <i class="bi bi-megaphone"></i>Ogłoszenia
+    </a>
+</nav>

@@ -1,0 +1,128 @@
+@model AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Panel administracyjny";
+    ViewData["AdminTab"] = "dashboard";
+}
+
+<div class="section-head">
+    <div>
+        <h1 class="section-title">Panel administracyjny</h1>
+        <p class="section-sub">Zarządzanie treścią i użytkownikami forum.</p>
+    </div>
+</div>
+
+<partial name="_AdminTabs" />
+
+<div class="stat-grid mt-0">
+    <div class="stat-card">
+        <span class="stat-icon"><i class="bi bi-people"></i></span>
+        <span>
+            <span class="stat-value">@Model.TotalUsers</span>
+            <span class="stat-label">użytkowników</span>
+        </span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-icon"><i class="bi bi-collection"></i></span>
+        <span>
+            <span class="stat-value">@Model.TotalThreads</span>
+            <span class="stat-label">wątków</span>
+        </span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-icon"><i class="bi bi-envelope"></i></span>
+        <span>
+            <span class="stat-value">@Model.TotalMessages</span>
+            <span class="stat-label">wiadomości</span>
+        </span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-icon"><i class="bi bi-diagram-3"></i></span>
+        <span>
+            <span class="stat-value">@Model.TotalForums</span>
+            <span class="stat-label">forów</span>
+        </span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-icon"><i class="bi bi-folder"></i></span>
+        <span>
+            <span class="stat-value">@Model.TotalCategories</span>
+            <span class="stat-label">kategorii</span>
+        </span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-icon"><i class="bi bi-megaphone"></i></span>
+        <span>
+            <span class="stat-value">@Model.TotalAnnouncements</span>
+            <span class="stat-label">ogłoszeń</span>
+        </span>
+    </div>
+</div>
+
+<div class="row g-4 mt-1">
+    <div class="col-lg-7">
+        <div class="section-head">
+            <h2 class="section-title" style="font-size:1.05rem">Ostatnio dołączeni użytkownicy</h2>
+            <a class="btn btn-outline-accent btn-sm" asp-action="Users">Zarządzaj wszystkimi</a>
+        </div>
+        <div class="admin-table-wrap">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nazwa</th>
+                        <th>E-mail</th>
+                        <th>Rola</th>
+                        <th>Dołączył</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model.RecentUsers)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@user.Username</td>
+                            <td>@user.Email</td>
+                            <td>
+                                @if (user.Role == Forum_Dyskuyjne.Models.Domain.UserRole.Admin)
+                                {
+                                    <span class="badge-role"><i class="bi bi-shield-lock me-1"></i>Admin</span>
+                                }
+                                else
+                                {
+                                    <span class="badge-outline">Użytkownik</span>
+                                }
+                            </td>
+                            <td>@user.JoinedAt.ToString("dd.MM.yyyy")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="section-head">
+            <h2 class="section-title" style="font-size:1.05rem">Szybkie akcje</h2>
+        </div>
+        <div class="d-grid gap-2">
+            <a class="btn btn-outline-accent justify-content-between d-flex align-items-center" asp-action="Announcements">
+                <span><i class="bi bi-megaphone me-2"></i>Dodaj ogłoszenie na stronę główną</span>
+                <i class="bi bi-chevron-right"></i>
+            </a>
+            <a class="btn btn-outline-accent justify-content-between d-flex align-items-center" asp-action="Forums">
+                <span><i class="bi bi-folder-plus me-2"></i>Utwórz nowe forum</span>
+                <i class="bi bi-chevron-right"></i>
+            </a>
+            <a class="btn btn-outline-accent justify-content-between d-flex align-items-center" asp-action="Categories">
+                <span><i class="bi bi-plus-folder me-2"></i>Zarządzaj kategoriami</span>
+                <i class="bi bi-chevron-right"></i>
+            </a>
+            <a class="btn btn-outline-accent justify-content-between d-flex align-items-center" asp-action="Users">
+                <span><i class="bi bi-person-gear me-2"></i>Zmień rolę lub rangę użytkownika</span>
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/admin.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,138 @@
+@model ThreadListViewModel
+@{
+    ViewData["Title"] = $"{Model.ForumName} — lista wątków";
+}
+
+<nav class="thread-breadcrumbs meta-line mb-2" aria-label="Okruszki">
+    <a asp-action="Index">Kategorie i fora</a>
+    <span class="mx-1">/</span>
+    <span>@Model.CategoryName</span>
+    <span class="mx-1">/</span>
+    <span class="fw-semibold text-reset">@Model.ForumName</span>
+</nav>
+
+<div class="section-head">
+    <div>
+        <h1 class="section-title">@Model.ForumName</h1>
+        <p class="section-sub">@Model.ForumDescription</p>
+    </div>
+    <a class="btn btn-accent" data-requires-auth
+       asp-action="CreateThread" asp-route-forumId="@Model.ForumId">
+        <i class="bi bi-plus-lg me-1"></i>Nowy wątek
+    </a>
+</div>
+
+@* --- Pasek narzędzi: wyszukiwarka + licznik --------------------------- *@
+<div class="thread-toolbar">
+    <form asp-action="Threads" method="get" class="input-group">
+        <input type="hidden" name="forumId" value="@Model.ForumId" />
+        <input type="search" name="q" value="@Model.Query" class="form-control"
+               placeholder="Szukaj w wątkach i wiadomościach tego forum..." aria-label="Fraza wyszukiwana" />
+        <button class="btn btn-accent" type="submit">
+            <i class="bi bi-search"></i><span class="ms-1 d-none d-sm-inline">Szukaj</span>
+        </button>
+    </form>
+
+    <span class="meta-line">
+        Wątków: <strong class="text-reset">@Model.TotalCount</strong>
+        @if (!string.IsNullOrEmpty(Model.Query))
+        {
+            <span class="badge-soft ms-2">
+                Wyniki dla: „@Model.Query”
+                <a asp-action="Threads" asp-route-forumId="@Model.ForumId"
+                   class="ms-1 text-reset" title="Wyczyść wyszukiwanie">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </span>
+        }
+    </span>
+</div>
+
+@* --- Lista wątków ------------------------------------------------------ *@
+@{
+    var pager = new PaginationViewModel
+    {
+        Action = "Threads",
+        Page = Model.Page,
+        TotalPages = Model.TotalPages,
+        RouteValues = new Dictionary<string, string>
+        {
+            ["forumId"] = Model.ForumId.ToString(),
+            ["q"] = Model.Query ?? string.Empty
+        }
+    };
+}
+
+@if (Model.Threads.Count == 0)
+{
+    <div class="empty-state">
+        <i class="bi bi-search"></i>
+        @if (!string.IsNullOrEmpty(Model.Query))
+        {
+            <text>Brak wątków pasujących do zapytania. Spróbuj innych słów kluczowych.</text>
+        }
+        else
+        {
+            <text>W tym forum nie ma jeszcze wątków — załóż pierwszy.</text>
+        }
+    </div>
+}
+else
+{
+    <div class="thread-list">
+        @foreach (var thread in Model.Threads)
+        {
+            <article class="thread-row @(thread.IsPinned ? "is-pinned" : "")">
+                <span class="thread-icon">
+                    <i class="bi @(thread.IsPinned ? "bi-pin-angle-fill" : "bi-chat-square-text")"></i>
+                </span>
+
+                <h2 class="thread-title">
+                    <a asp-action="Thread" asp-route-id="@thread.Id">@thread.Title</a>
+                    @if (thread.IsPinned)
+                    {
+                        <span class="badge-pinned"><i class="bi bi-pin-angle-fill me-1"></i>Przyklejony</span>
+                    }
+                </h2>
+
+                @if (!string.IsNullOrWhiteSpace(thread.Description))
+                {
+                    <p class="thread-excerpt">@thread.Description</p>
+                }
+
+                <div class="thread-meta">
+                    <span><i class="bi bi-person me-1"></i>@thread.AuthorName</span>
+                    <span class="meta-sep">&middot;</span>
+                    <span><i class="bi bi-calendar3 me-1"></i>@thread.CreatedAt.ToString("dd.MM.yyyy")</span>
+                    <span class="meta-sep">&middot;</span>
+                    <span>
+                        <i class="bi bi-arrow-return-right me-1"></i>ostatnia aktywność
+                        @thread.LastActivityAt.ToString("dd.MM.yyyy")
+                        @if (!string.IsNullOrEmpty(thread.LastAuthorName))
+                        {
+                            <text>(@thread.LastAuthorName)</text>
+                        }
+                    </span>
+                </div>
+
+                <div class="thread-stats">
+                    <div class="thread-stat">
+                        <strong>@thread.ReplyCount</strong>
+                        <span>odpowiedzi</span>
+                    </div>
+                    <div class="thread-stat">
+                        <strong>@thread.ViewCount</strong>
+                        <span>odsłon</span>
+                    </div>
+                </div>
+            </article>
+        }
+    </div>
+
+    <partial name="_Pagination" model="pager" />
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/forum.js" asp-append-version="true"></script>
+}

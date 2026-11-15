@@ -1,0 +1,74 @@
+@model CreateThreadViewModel
+@{
+    ViewData["Title"] = "Nowy wątek";
+    var backForumId = Model.ForumId > 0 ? Model.ForumId : 0;
+}
+
+<div class="form-card wide">
+    <h1 class="form-title">Załóż nowy wątek</h1>
+    <p class="form-subtitle">
+        Wypełnij formularz — tytuł i treść są wymagane. Po opublikowaniu wątek pojawi się na liście forum.
+    </p>
+
+    <form asp-action="CreateThread" method="post" id="createThreadForm">
+        <input type="hidden" name="AuthorName" data-author-name value="" />
+
+        <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+
+        <div class="row g-3">
+            <div class="col-12">
+                <label asp-for="ForumId" class="form-label"></label>
+                <select asp-for="ForumId" asp-items="ViewBag.Forums" class="form-select"></select>
+                <span asp-validation-for="ForumId" class="text-validation"></span>
+            </div>
+
+            <div class="col-12">
+                <label asp-for="Title" class="form-label"></label>
+                <input asp-for="Title" class="form-control" placeholder="np. Jak skonfigurować wydanie aplikacji?" />
+                <span asp-validation-for="Title" class="text-validation"></span>
+            </div>
+
+            <div class="col-12">
+                <label asp-for="Description" class="form-label"></label>
+                <input asp-for="Description" class="form-control"
+                       placeholder="Krótki opis widoczny na liście wątków (opcjonalny)" />
+                <span asp-validation-for="Description" class="text-validation"></span>
+            </div>
+
+            <div class="col-12">
+                <label asp-for="Content" class="form-label"></label>
+                <textarea asp-for="Content" class="form-control" rows="8"
+                          placeholder="Treść wiadomości inicjującej..."></textarea>
+                <span asp-validation-for="Content" class="text-validation"></span>
+            </div>
+
+            @* Opcja przyklejania wyłącznie dla administratora — ujawniana przez forum.js. *@
+            <div class="col-12 d-none" data-admin-only>
+                <div class="form-check">
+                    <input asp-for="IsPinned" class="form-check-input" />
+                    <label asp-for="IsPinned" class="form-check-label"></label>
+                </div>
+            </div>
+
+            <div class="col-12 d-flex gap-2 justify-content-end align-items-center flex-wrap">
+                @if (backForumId > 0)
+                {
+                    <a class="btn btn-outline-secondary"
+                       asp-action="Threads" asp-route-forumId="@backForumId">Anuluj</a>
+                }
+                else
+                {
+                    <a class="btn btn-outline-secondary" asp-action="Index">Anuluj</a>
+                }
+                <button type="submit" class="btn btn-accent">
+                    <i class="bi bi-plus-lg me-1"></i>Utwórz wątek
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/forum.js" asp-append-version="true"></script>
+}

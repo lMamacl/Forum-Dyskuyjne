@@ -1,0 +1,171 @@
+@model ForumsAdminViewModel
+@{
+    ViewData["Title"] = "Fora — panel administracyjny";
+    ViewData["AdminTab"] = "forums";
+    var editing = Model.Form.Id > 0;
+}
+
+<div class="section-head">
+    <div>
+        <h1 class="section-title">Zarządzanie forami</h1>
+        <p class="section-sub">
+            Utworzenie forum wymaga wskazania jednej kategorii. Tu także ustawiasz uprawnienia
+            anonimowych widzów oraz listę moderatorów.
+        </p>
+    </div>
+</div>
+
+<partial name="_AdminTabs" />
+
+@if (TempData["Success"] is string successMessage)
+{
+    <div class="alert alert-success alert-site" role="alert">
+        <i class="bi bi-check-circle me-1"></i>@successMessage
+    </div>
+}
+@if (TempData["Error"] is string errorMessage)
+{
+    <div class="alert alert-danger alert-site" role="alert">
+        <i class="bi bi-exclamation-triangle me-1"></i>@errorMessage
+    </div>
+}
+
+<div class="admin-table-wrap mb-4">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Nazwa</th>
+                <th>Kategoria</th>
+                <th>Anonimowie</th>
+                <th>Wątki</th>
+                <th>Moderatorzy</th>
+                <th class="text-end">Akcje</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var forum in Model.Forums)
+            {
+                <tr>
+                    <td>
+                        <div class="fw-semibold">@forum.Name</div>
+                        @if (!string.IsNullOrEmpty(forum.Description))
+                        {
+                            <div class="meta-line">@forum.Description</div>
+                        }
+                    </td>
+                    <td><span class="badge-outline">@forum.CategoryName</span></td>
+                    <td>
+                        @if (forum.AllowAnonymousView)
+                        {
+                            <span class="badge-soft me-1" title="Anonimowie mogą przeglądać">podgląd</span>
+                        }
+                        @if (forum.AllowAnonymousPost)
+                        {
+                            <span class="badge-soft" title="Anonimowie mogą pisać">pisanie</span>
+                        }
+                        @if (!forum.AllowAnonymousView && !forum.AllowAnonymousPost)
+                        {
+                            <span class="meta-line">brak</span>
+                        }
+                    </td>
+                    <td>@forum.ThreadCount</td>
+                    <td>@forum.ModeratorCount</td>
+                    <td class="text-end">
+                        <a class="btn btn-outline-accent btn-xs" asp-action="Forums" asp-route-edit="@forum.Id">
+                            <i class="bi bi-pencil me-1"></i>Edytuj
+                        </a>
+                        <form asp-action="DeleteForum" asp-route-id="@forum.Id" method="post"
+                              class="d-inline" data-confirm="Usunąć forum wraz ze wszystkimi wątkami i wiadomościami?">
+                            <button type="submit" class="btn btn-outline-danger btn-xs">
+                                <i class="bi bi-trash3 me-1"></i>Usuń
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<section class="settings-section">
+    <h3>
+        <i class="bi bi-folder-plus"></i>
+        @(editing ? $"Edycja: {Model.Form.Name}" : "Nowe forum")
+    </h3>
+
+    <form asp-action="SaveForum" method="post">
+        <input type="hidden" asp-for="Form.Id" />
+
+        <div class="admin-form-grid mb-3">
+            <div>
+                <label asp-for="Form.Name" class="form-label"></label>
+                <input asp-for="Form.Name" class="form-control" placeholder="np. Programowanie" />
+                <span asp-validation-for="Form.Name" class="text-validation"></span>
+            </div>
+            <div>
+                <label asp-for="Form.CategoryId" class="form-label"></label>
+                <select asp-for="Form.CategoryId"
+                        asp-items="new SelectList(Model.CategoryOptions, nameof(CategoryOptionViewModel.Id), nameof(CategoryOptionViewModel.Name), Model.Form.CategoryId)"
+                        class="form-select">
+                    <option value="">— wybierz kategorię —</option>
+                </select>
+                <span asp-validation-for="Form.CategoryId" class="text-validation"></span>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Form.Description" class="form-label"></label>
+            <textarea asp-for="Form.Description" class="form-control" rows="2"
+                      placeholder="Opis forum widoczny na liście kategorii"></textarea>
+            <span asp-validation-for="Form.Description" class="text-validation"></span>
+        </div>
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <div class="form-check">
+                    <input asp-for="Form.AllowAnonymousView" class="form-check-input" />
+                    <label asp-for="Form.AllowAnonymousView" class="form-check-label"></label>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-check">
+                    <input asp-for="Form.AllowAnonymousPost" class="form-check-input" />
+                    <label asp-for="Form.AllowAnonymousPost" class="form-check-label"></label>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Moderatorzy forum (wielu do wielu)</label>
+            <div class="check-list">
+                @foreach (var user in Model.UserOptions)
+                {
+                    var isChecked = Model.Form.ModeratorIds.Contains(user.Id);
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox"
+                               name="Form.ModeratorIds" value="@user.Id"
+                               id="mod-@user.Id" checked="@isChecked" />
+                        <label class="form-check-label" for="mod-@user.Id">@user.Username</label>
+                    </div>
+                }
+            </div>
+            <div class="form-text">Moderator może edytować i usuwać wiadomości w tym forum.</div>
+        </div>
+
+        <div class="d-flex gap-2 justify-content-end">
+            @if (editing)
+            {
+                <a class="btn btn-outline-secondary" asp-action="Forums">Anuluj</a>
+            }
+            <button type="submit" class="btn btn-accent">
+                <i class="bi bi-check-lg me-1"></i>
+                @(editing ? "Zapisz zmiany" : "Dodaj forum")
+            </button>
+        </div>
+    </form>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/admin.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,134 @@
+@model SettingsViewModel
+@{
+    ViewData["Title"] = "Ustawienia profilu";
+}
+
+<div class="section-head">
+    <div>
+        <h1 class="section-title">Ustawienia profilu</h1>
+        <p class="section-sub">
+            Dane konta, bezpieczeństwo, personalizacja i avatar. W etapie 1 ustawienia zapisywane są
+            lokalnie w przeglądarce — w etapie 2 trafią do konta w bazie bez zmian w tym widoku.
+        </p>
+    </div>
+</div>
+
+@* --- Konto ------------------------------------------------------------- *@
+<section class="settings-section">
+    <h3><i class="bi bi-person"></i>Konto</h3>
+    <form id="settingsAccountForm">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label asp-for="DisplayName" class="form-label"></label>
+                <input asp-for="DisplayName" class="form-control" autocomplete="username" />
+                <span asp-validation-for="DisplayName" class="text-validation"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Email" class="form-label"></label>
+                <input asp-for="Email" class="form-control" autocomplete="email" />
+                <span asp-validation-for="Email" class="text-validation"></span>
+            </div>
+            <div class="col-12 d-flex justify-content-end">
+                <button type="submit" class="btn btn-accent">
+                    <i class="bi bi-check-lg me-1"></i>Zapisz konto
+                </button>
+            </div>
+        </div>
+        <div class="alert alert-success alert-site d-none mt-3" data-form-alert="account"></div>
+    </form>
+</section>
+
+@* --- Bezpieczeństwo ---------------------------------------------------- *@
+<section class="settings-section">
+    <h3><i class="bi bi-shield-lock"></i>Bezpieczeństwo</h3>
+    <form id="settingsPasswordForm">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label asp-for="CurrentPassword" class="form-label"></label>
+                <input asp-for="CurrentPassword" class="form-control" autocomplete="current-password" />
+                <span asp-validation-for="CurrentPassword" class="text-validation"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="NewPassword" class="form-label"></label>
+                <input asp-for="NewPassword" class="form-control" autocomplete="new-password" />
+                <span asp-validation-for="NewPassword" class="text-validation"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="ConfirmNewPassword" class="form-label"></label>
+                <input asp-for="ConfirmNewPassword" class="form-control" autocomplete="new-password" />
+                <span asp-validation-for="ConfirmNewPassword" class="text-validation"></span>
+            </div>
+            <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <span class="meta-line">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Przypominanie hasła e-mailem: etap 2 (wymaga konfiguracji poczty).
+                </span>
+                <button type="submit" class="btn btn-accent">
+                    <i class="bi bi-key me-1"></i>Zmień hasło
+                </button>
+            </div>
+        </div>
+        <div class="alert alert-success alert-site d-none mt-3" data-form-alert="password"></div>
+    </form>
+</section>
+
+@* --- Personalizacja ---------------------------------------------------- *@
+<section class="settings-section">
+    <h3><i class="bi bi-sliders"></i>Personalizacja</h3>
+    <form id="settingsPersonalForm">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label asp-for="PageSize" class="form-label"></label>
+                <input asp-for="PageSize" type="number" min="5" max="50" class="form-control" />
+                <span asp-validation-for="PageSize" class="text-validation"></span>
+                <div class="form-text">Liczba wiadomości na stronie wątku i list wątków.</div>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="IdleMinutes" class="form-label"></label>
+                <input asp-for="IdleMinutes" type="number" min="1" max="1440" class="form-control" />
+                <span asp-validation-for="IdleMinutes" class="text-validation"></span>
+                <div class="form-text">Automatyczne wylogowanie po braku aktywności.</div>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Theme" class="form-label"></label>
+                <select asp-for="Theme" class="form-select">
+                    <option value="light">Klasyczny (jasny)</option>
+                    <option value="dark">Ciemny</option>
+                    <option value="ocean">Ocean (niebieski)</option>
+                </select>
+                <span asp-validation-for="Theme" class="text-validation"></span>
+            </div>
+            <div class="col-12 d-flex justify-content-end">
+                <button type="submit" class="btn btn-accent">
+                    <i class="bi bi-check-lg me-1"></i>Zapisz personalizację
+                </button>
+            </div>
+        </div>
+        <div class="alert alert-success alert-site d-none mt-3" data-form-alert="personal"></div>
+    </form>
+</section>
+
+@* --- Avatar ------------------------------------------------------------ *@
+<section class="settings-section">
+    <h3><i class="bi bi-image"></i>Avatar</h3>
+    <div class="avatar-preview-row">
+        <span class="user-avatar-xl" data-profile-avatar style="width:4rem;height:4rem;font-size:1.4rem">?</span>
+        <div class="flex-grow-1">
+            <input type="file" id="avatarInput" accept="image/jpeg,image/png,image/webp" class="form-control" />
+            <div class="avatar-file-info mt-2">
+                Format: JPG, PNG lub WEBP. Maksymalna rozdzielczość 512×512 px, maksymalny rozmiar 200 kB.
+            </div>
+            <div class="alert alert-danger alert-site d-none mt-2" data-form-alert="avatar-error"></div>
+            <div class="d-flex gap-2 mt-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="avatarClear">
+                    <i class="bi bi-trash3 me-1"></i>Usuń avatar
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/account.js" asp-append-version="true"></script>
+}

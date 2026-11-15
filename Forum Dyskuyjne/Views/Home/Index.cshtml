@@ -1,8 +1,128 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@model HomeViewModel
+@{
+    ViewData["Title"] = "Strona główna";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+@* --- Powitanie ------------------------------------------------------- *@
+<section class="hero-card">
+    <h1>Witaj na Forum Dyskusyjnym</h1>
+    <p class="lead">
+        Miejsce, w którym powstają wątki, a dyskusja toczy się własnym tokiem. Przeglądaj kategorie,
+        dołączaj do istniejących rozmów lub załóż nowy wątek. Możliwość pisania otrzymujesz od razu
+        po zalogowaniu.
+    </p>
+
+    <div class="d-flex flex-wrap gap-2">
+        <span data-auth-show="guest" class="d-inline-block">
+            <a class="btn btn-accent" asp-controller="Account" asp-action="Login">
+                <i class="bi bi-box-arrow-in-right me-1"></i>Zaloguj się
+            </a>
+            <a class="btn btn-outline-accent ms-1" asp-controller="Account" asp-action="Register">
+                <i class="bi bi-person-plus me-1"></i>Załóż konto
+            </a>
+        </span>
+        <a class="btn btn-accent" data-auth-show="user" asp-controller="Forum" asp-action="Index">
+            <i class="bi bi-chat-left-text me-1"></i>Przeglądaj wątki
+        </a>
+    </div>
+
+    <div class="stat-grid">
+        <div class="stat-card">
+            <span class="stat-icon"><i class="bi bi-people"></i></span>
+            <span>
+                <span class="stat-value">@Model.TotalUsers</span>
+                <span class="stat-label">zarejestrowanych użytkowników</span>
+            </span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-icon"><i class="bi bi-collection"></i></span>
+            <span>
+                <span class="stat-value">@Model.TotalThreads</span>
+                <span class="stat-label">wątków</span>
+            </span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-icon"><i class="bi bi-envelope"></i></span>
+            <span>
+                <span class="stat-value">@Model.TotalMessages</span>
+                <span class="stat-label">wiadomości</span>
+            </span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-icon"><i class="bi bi-diagram-3"></i></span>
+            <span>
+                <span class="stat-value">@Model.TotalForums</span>
+                <span class="stat-label">forów w kategoriach</span>
+            </span>
+        </div>
+    </div>
+</section>
+
+<div class="row g-4 mt-1">
+    @* --- Ogłoszenia administracyjne ----------------------------------- *@
+    <div class="col-12 col-lg-7">
+        <div class="section-head">
+            <h2 class="section-title">Ogłoszenia administracyjne</h2>
+        </div>
+
+        @if (Model.Announcements.Count == 0)
+        {
+            <div class="empty-state">
+                <i class="bi bi-megaphone"></i>
+                Brak ogłoszeń.
+            </div>
+        }
+        else
+        {
+            @foreach (var announcement in Model.Announcements)
+            {
+                <article class="announcement-card">
+                    <h5><i class="bi bi-megaphone"></i>@announcement.Title</h5>
+                    <p>@announcement.Content</p>
+                    <div class="announcement-meta">
+                        <i class="bi bi-person-circle me-1"></i>@announcement.AuthorName
+                        <span class="mx-1">&middot;</span>
+                        <i class="bi bi-calendar3 me-1"></i>@announcement.CreatedAt.ToString("dd.MM.yyyy")
+                    </div>
+                </article>
+            }
+        }
+    </div>
+
+    @* --- Ostatnie wątki ------------------------------------------------- *@
+    <div class="col-12 col-lg-5">
+        <div class="section-head">
+            <h2 class="section-title">Ostatnie wątki</h2>
+        </div>
+
+        <div class="surface-card p-2">
+            @if (Model.RecentThreads.Count == 0)
+            {
+                <div class="empty-state border-0">
+                    <i class="bi bi-chat-square-text"></i>
+                    Nie ma jeszcze żadnych wątków.
+                </div>
+            }
+            else
+            {
+                <ul class="list-unstyled m-0">
+                    @foreach (var thread in Model.RecentThreads)
+                    {
+                        <li class="px-2 py-2 border-bottom" style="border-color: var(--border) !important;">
+                            <a asp-controller="Forum" asp-action="Thread" asp-route-id="@thread.Id"
+                               class="fw-semibold d-block">@thread.Title</a>
+                            <span class="meta-line">
+                                <i class="bi bi-clock me-1"></i>@thread.LastActivityAt.ToString("dd.MM.yyyy HH:mm")
+                                @if (!string.IsNullOrEmpty(thread.LastAuthorName))
+                                {
+                                    <span class="mx-1">&middot;</span>
+                                    <i class="bi bi-person me-1"></i>@thread.LastAuthorName
+                                }
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
 </div>

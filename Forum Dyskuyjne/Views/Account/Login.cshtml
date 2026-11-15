@@ -1,0 +1,70 @@
+@model LoginViewModel
+@{
+    ViewData["Title"] = "Logowanie";
+    var returnUrl = ViewData["ReturnUrl"] as string;
+    var reason = ViewData["Reason"] as string;
+}
+
+<div class="form-card">
+    <h1 class="form-title">Logowanie</h1>
+    <p class="form-subtitle">Zaloguj się, aby pisać wątki i odpowiadać na wiadomości.</p>
+
+    @if (reason == "idle")
+    {
+        <div class="alert alert-info alert-site" role="alert">
+            <i class="bi bi-clock-history me-1"></i>
+            Zostałeś wylogowany po okresie nieaktywności. Zaloguj się ponownie, aby kontynuować.
+        </div>
+    }
+
+    <form method="post" id="loginForm" data-return-url="@returnUrl">
+        <div asp-validation-summary="ModelOnly" class="validation-summary-errors" data-auth-errors></div>
+
+        <div class="mb-3">
+            <label asp-for="Email" class="form-label"></label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                <input asp-for="Email" class="form-control" autocomplete="username"
+                       placeholder="np. admin@forum.pl" />
+            </div>
+            <span asp-validation-for="Email" class="text-validation"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Password" class="form-label"></label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                <input asp-for="Password" class="form-control" autocomplete="current-password"
+                       placeholder="Hasło" />
+            </div>
+            <span asp-validation-for="Password" class="text-validation"></span>
+        </div>
+
+        <div class="form-check mb-3">
+            <input asp-for="RememberMe" class="form-check-input" />
+            <label asp-for="RememberMe" class="form-check-label"></label>
+        </div>
+
+        <button type="submit" class="btn btn-accent w-100">
+            <i class="bi bi-box-arrow-in-right me-1"></i>Zaloguj się
+        </button>
+
+        <p class="form-footer">
+            Nie masz konta? <a asp-action="Register">Zarejestruj się</a>
+        </p>
+    </form>
+
+    <div class="surface-card p-3 mt-3" style="background: var(--surface-2)">
+        <div class="meta-line mb-1"><i class="bi bi-key me-1"></i>Konta demonstracyjne</div>
+        <div class="meta-line">
+            Administrator: <code>admin@forum.pl</code> / <code>Admin123!</code><br />
+            Moderator: <code>mod@forum.pl</code> / <code>Mod123!</code><br />
+            Użytkownik: <code>user@forum.pl</code> / <code>User123!</code>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/account.js" asp-append-version="true"></script>
+}

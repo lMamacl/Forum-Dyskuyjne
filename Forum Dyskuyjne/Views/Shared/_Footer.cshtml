@@ -1,0 +1,43 @@
+@using Forum_Dyskuyjne.Services
+@inject IForumRepository Repository
+@{
+    var totals = Repository.GetTotals();
+}
+<footer class="forum-footer">
+    <div class="container">
+        <div class="row g-4 py-5">
+            <div class="col-12 col-md-4">
+                <div class="footer-brand">
+                    <span class="brand-mark">FD</span>
+                    <span>Forum Dyskusyjne</span>
+                </div>
+                <p class="footer-desc">
+                    Internetowe forum dyskusyjne — wątki, odpowiedzi i społeczność w jednym miejscu.
+                    Projekt w ramach przedmiotu Aplikacje webowe w ASP MVC.
+                </p>
+            </div>
+            <div class="col-6 col-md-4">
+                <h6 class="footer-heading">Nawigacja</h6>
+                <ul class="footer-links">
+                    <li><a asp-controller="Home" asp-action="Index">Strona główna</a></li>
+                    <li><a asp-controller="Forum" asp-action="Index">Kategorie i fora</a></li>
+                    <li><a asp-controller="Account" asp-action="Login">Logowanie</a></li>
+                    <li><a asp-controller="Account" asp-action="Register">Rejestracja</a></li>
+                </ul>
+            </div>
+            <div class="col-6 col-md-4">
+                <h6 class="footer-heading">Forum w liczbach</h6>
+                <ul class="footer-stats">
+                    <li><i class="bi bi-people"></i><strong>@totals.Users</strong> użytkowników</li>
+                    <li><i class="bi bi-collection"></i><strong>@totals.Threads</strong> wątków</li>
+                    <li><i class="bi bi-envelope"></i><strong>@totals.Messages</strong> wiadomości</li>
+                    <li><i class="bi bi-diagram-3"></i><strong>@totals.Forums</strong> forów</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>&copy; 2026 Forum Dyskusyjne — projekt studencki, ASP.NET Core MVC (.NET 10)</span>
+            <span>Silnik: warstwa MVC + warstwa danych za pośrednictwem interfejsu <code>IForumRepository</code></span>
+        </div>
+    </div>
+</footer>

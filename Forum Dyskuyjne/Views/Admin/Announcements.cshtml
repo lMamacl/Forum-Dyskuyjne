@@ -1,0 +1,100 @@
+@model AnnouncementsAdminViewModel
+@{
+    ViewData["Title"] = "Ogłoszenia — panel administracyjny";
+    ViewData["AdminTab"] = "announcements";
+}
+
+<div class="section-head">
+    <div>
+        <h1 class="section-title">Ogłoszenia administracyjne</h1>
+        <p class="section-sub">
+            Ogłoszenia pojawiają się na stronie głównej forum — wyświetlają się nad statystykami.
+        </p>
+    </div>
+</div>
+
+<partial name="_AdminTabs" />
+
+@if (TempData["Success"] is string successMessage)
+{
+    <div class="alert alert-success alert-site" role="alert">
+        <i class="bi bi-check-circle me-1"></i>@successMessage
+    </div>
+}
+@if (TempData["Error"] is string errorMessage)
+{
+    <div class="alert alert-danger alert-site" role="alert">
+        <i class="bi bi-exclamation-triangle me-1"></i>@errorMessage
+    </div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="section-head">
+            <h2 class="section-title" style="font-size:1.05rem">Opublikowane ogłoszenia</h2>
+        </div>
+
+        @if (Model.Announcements.Count == 0)
+        {
+            <div class="empty-state">
+                <i class="bi bi-megaphone"></i>
+                Nie opublikowano jeszcze żadnych ogłoszeń.
+            </div>
+        }
+        else
+        {
+            @foreach (var announcement in Model.Announcements)
+            {
+                <article class="announcement-card">
+                    <h5><i class="bi bi-megaphone"></i>@announcement.Title</h5>
+                    <p>@announcement.Content</p>
+                    <div class="announcement-meta d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <span>
+                            <i class="bi bi-person-circle me-1"></i>@announcement.AuthorName
+                            <span class="mx-1">&middot;</span>
+                            <i class="bi bi-calendar3 me-1"></i>@announcement.CreatedAt.ToString("dd.MM.yyyy HH:mm")
+                        </span>
+                        <form asp-action="DeleteAnnouncement" asp-route-id="@announcement.Id" method="post"
+                              data-confirm="Usunąć to ogłoszenie?">
+                            <button type="submit" class="btn btn-outline-danger btn-xs">
+                                <i class="bi bi-trash3 me-1"></i>Usuń
+                            </button>
+                        </form>
+                    </div>
+                </article>
+            }
+        }
+    </div>
+
+    <div class="col-lg-5">
+        <section class="settings-section">
+            <h3><i class="bi bi-megaphone"></i>Nowe ogłoszenie</h3>
+
+            <form asp-action="SaveAnnouncement" method="post">
+                <div class="mb-3">
+                    <label asp-for="Form.Title" class="form-label"></label>
+                    <input asp-for="Form.Title" class="form-control" placeholder="np. Nowe zasady moderacji" />
+                    <span asp-validation-for="Form.Title" class="text-validation"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Form.Content" class="form-label"></label>
+                    <textarea asp-for="Form.Content" class="form-control" rows="6"
+                              placeholder="Treść ogłoszenia..."></textarea>
+                    <span asp-validation-for="Form.Content" class="text-validation"></span>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-accent">
+                        <i class="bi bi-send me-1"></i>Opublikuj
+                    </button>
+                </div>
+            </form>
+        </section>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/admin.js" asp-append-version="true"></script>
+}

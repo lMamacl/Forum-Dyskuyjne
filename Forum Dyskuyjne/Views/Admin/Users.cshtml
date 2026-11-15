@@ -1,0 +1,146 @@
+@model UsersAdminViewModel
+@{
+    ViewData["Title"] = "Użytkownicy — panel administracyjny";
+    ViewData["AdminTab"] = "users";
+    var editing = Model.Form.Id > 0;
+}
+
+<div class="section-head">
+    <div>
+        <h1 class="section-title">Zarządzanie użytkownikami</h1>
+        <p class="section-sub">
+            Lista kont, zmiana roli i rangi (ręczne nadawanie), aktywacja i blokada kont.
+        </p>
+    </div>
+</div>
+
+<partial name="_AdminTabs" />
+
+@if (TempData["Success"] is string successMessage)
+{
+    <div class="alert alert-success alert-site" role="alert">
+        <i class="bi bi-check-circle me-1"></i>@successMessage
+    </div>
+}
+@if (TempData["Error"] is string errorMessage)
+{
+    <div class="alert alert-danger alert-site" role="alert">
+        <i class="bi bi-exclamation-triangle me-1"></i>@errorMessage
+    </div>
+}
+
+<div class="admin-table-wrap mb-4">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Nazwa</th>
+                <th>E-mail</th>
+                <th>Rola</th>
+                <th>Ranga</th>
+                <th>Wiadomości</th>
+                <th>Status</th>
+                <th class="text-end">Akcje</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in Model.Users)
+            {
+                <tr>
+                    <td class="fw-semibold">@user.Username</td>
+                    <td>@user.Email</td>
+                    <td>
+                        @if (user.Role == Forum_Dyskuyjne.Models.Domain.UserRole.Admin)
+                        {
+                            <span class="badge-role"><i class="bi bi-shield-lock me-1"></i>Admin</span>
+                        }
+                        else
+                        {
+                            <span class="badge-outline">Użytkownik</span>
+                        }
+                    </td>
+                    <td><span class="badge-soft">@user.Rank</span></td>
+                    <td>@user.MessageCount</td>
+                    <td>
+                        @if (user.IsActive)
+                        {
+                            <span class="text-success"><i class="bi bi-check-circle me-1"></i>Aktywne</span>
+                        }
+                        else
+                        {
+                            <span class="text-danger"><i class="bi bi-slash-circle me-1"></i>Zablokowane</span>
+                        }
+                    </td>
+                    <td class="text-end">
+                        <a class="btn btn-outline-accent btn-xs" asp-action="Users" asp-route-edit="@user.Id">
+                            <i class="bi bi-pencil me-1"></i>Edytuj
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<section class="settings-section">
+    <h3>
+        <i class="bi bi-person-gear"></i>
+        @(editing ? $"Edycja: {Model.Form.Username}" : "Edycja użytkownika")
+    </h3>
+
+    @if (!editing)
+    {
+        <p class="meta-line">
+            Wybierz „Edytuj” przy koncie na liście powyżej, aby uzupełnić formularz.
+        </p>
+    }
+
+    <form asp-action="EditUser" method="post" class="@(editing ? "" : "d-none")" id="userEditForm">
+        <input type="hidden" asp-for="Form.Id" />
+        <div class="admin-form-grid">
+            <div>
+                <label asp-for="Form.Username" class="form-label"></label>
+                <input asp-for="Form.Username" class="form-control" />
+                <span asp-validation-for="Form.Username" class="text-validation"></span>
+            </div>
+            <div>
+                <label asp-for="Form.Email" class="form-label"></label>
+                <input asp-for="Form.Email" class="form-control" />
+                <span asp-validation-for="Form.Email" class="text-validation"></span>
+            </div>
+            <div>
+                <label asp-for="Form.Role" class="form-label"></label>
+                <select asp-for="Form.Role" asp-items="Html.GetEnumSelectList<Forum_Dyskuyjne.Models.Domain.UserRole>()"
+                        class="form-select"></select>
+            </div>
+            <div>
+                <label asp-for="Form.Rank" class="form-label"></label>
+                <input asp-for="Form.Rank" class="form-control" list="rankOptions" />
+                <datalist id="rankOptions">
+                    <option value="Nowicjusz"></option>
+                    <option value="Uczestnik"></option>
+                    <option value="Weteran"></option>
+                    <option value="Moderator"></option>
+                    <option value="Administrator"></option>
+                </datalist>
+                <span asp-validation-for="Form.Rank" class="text-validation"></span>
+            </div>
+        </div>
+
+        <div class="form-check mt-3">
+            <input asp-for="Form.IsActive" class="form-check-input" />
+            <label asp-for="Form.IsActive" class="form-check-label"></label>
+        </div>
+
+        <div class="d-flex gap-2 justify-content-end mt-3">
+            <a class="btn btn-outline-secondary" asp-action="Users">Anuluj</a>
+            <button type="submit" class="btn btn-accent">
+                <i class="bi bi-check-lg me-1"></i>Zapisz użytkownika
+            </button>
+        </div>
+    </form>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/admin.js" asp-append-version="true"></script>
+}

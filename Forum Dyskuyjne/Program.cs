@@ -1,7 +1,12 @@
+using Forum_Dyskuyjne.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+// Warstwa danych: w etapie 1 dane w pamięci (bez bazy); w etapie 2 podmiana na implementację EF Core.
+builder.Services.AddSingleton<IForumRepository, InMemoryForumRepository>();
 
 var app = builder.Build();
 

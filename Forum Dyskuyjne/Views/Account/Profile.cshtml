@@ -1,0 +1,95 @@
+@model ProfileViewModel
+@{
+    ViewData["Title"] = "Profil";
+    var initial = string.IsNullOrEmpty(Model.Username) ? "?" : Model.Username.Substring(0, 1).ToUpper();
+    var joined = Model.JoinedAt != DateTime.MinValue ? Model.JoinedAt.ToString("dd.MM.yyyy") : "—";
+}
+
+<div class="profile-card">
+    <div class="profile-head">
+        <span class="user-avatar-xl" data-profile-avatar>@initial</span>
+        <div class="flex-grow-1">
+            <h1 data-profile-username>@Model.Username</h1>
+            <div class="profile-facts">
+                <span data-profile-email>
+                    <i class="bi bi-envelope me-1"></i>@(string.IsNullOrEmpty(Model.Email) ? "—" : Model.Email)
+                </span>
+                <span>
+                    <i class="bi bi-calendar3 me-1"></i>Członek od <span data-profile-joined>@joined</span>
+                </span>
+                @if (Model.Role == Forum_Dyskuyjne.Models.Domain.UserRole.Admin)
+                {
+                    <span class="badge-role"><i class="bi bi-shield-lock me-1"></i>Administrator</span>
+                }
+                @if (!Model.IsActive)
+                {
+                    <span class="badge" style="background:#dc3545;color:#fff">Konto nieaktywne</span>
+                }
+            </div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <span class="badge-soft"><i class="bi bi-award me-1"></i><span data-profile-rank>@Model.Rank</span></span>
+            <a class="btn btn-outline-accent btn-sm" asp-action="Settings">
+                <i class="bi bi-gear me-1"></i>Ustawienia
+            </a>
+        </div>
+    </div>
+
+    <div class="profile-stats">
+        <div class="stat-card">
+            <span class="stat-icon"><i class="bi bi-collection"></i></span>
+            <span>
+                <span class="stat-value" data-profile-threads>@Model.ThreadCount</span>
+                <span class="stat-label">utworzonych wątków</span>
+            </span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-icon"><i class="bi bi-envelope"></i></span>
+            <span>
+                <span class="stat-value" data-profile-messages>@Model.MessageCount</span>
+                <span class="stat-label">napisanych wiadomości</span>
+            </span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-icon"><i class="bi bi-award"></i></span>
+            <span>
+                <span class="stat-value" style="font-size:1.02rem" data-profile-rank>@Model.Rank</span>
+                <span class="stat-label">aktualna ranga</span>
+            </span>
+        </div>
+    </div>
+</div>
+
+<div class="section-head mt-4">
+    <h2 class="section-title">Ostatnie wypowiedzi</h2>
+</div>
+
+@if (Model.RecentPosts.Count == 0)
+{
+    <div class="empty-state">
+        <i class="bi bi-pencil-square"></i>
+        Ten użytkownik nie odpowiedział jeszcze w żadnym wątku.
+    </div>
+}
+else
+{
+    <div class="thread-list">
+        @foreach (var post in Model.RecentPosts)
+        {
+            <article class="thread-row">
+                <span class="thread-icon"><i class="bi bi-reply"></i></span>
+                <h3 class="thread-title">
+                    <a asp-controller="Forum" asp-action="Thread" asp-route-id="@post.ThreadId">@post.ThreadTitle</a>
+                </h3>
+                <p class="thread-excerpt">@post.Content</p>
+                <div class="thread-meta">
+                    <span><i class="bi bi-calendar3 me-1"></i>@post.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                </div>
+            </article>
+        }
+    </div>
+}
+
+@section Scripts {
+    <script src="~/js/account.js" asp-append-version="true"></script>
+}

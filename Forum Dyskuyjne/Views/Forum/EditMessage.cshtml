@@ -1,0 +1,36 @@
+@model EditMessageViewModel
+@{
+    ViewData["Title"] = "Edycja wiadomości";
+}
+
+<div class="form-card">
+    <h1 class="form-title">Edycja wiadomości</h1>
+    <p class="form-subtitle">
+        Edycja jest przeznaczona dla autora, moderatora forum oraz administratora.
+    </p>
+
+    <form asp-action="EditMessage" method="post">
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="ThreadId" />
+
+        <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+
+        <div class="mb-3">
+            <label asp-for="Content" class="form-label"></label>
+            <textarea asp-for="Content" class="form-control" rows="8"></textarea>
+            <span asp-validation-for="Content" class="text-validation"></span>
+        </div>
+
+        <div class="d-flex gap-2 justify-content-end">
+            <a class="btn btn-outline-secondary" asp-action="Thread" asp-route-id="@Model.ThreadId">Anuluj</a>
+            <button type="submit" class="btn btn-accent">
+                <i class="bi bi-check-lg me-1"></i>Zapisz zmiany
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/forum.js" asp-append-version="true"></script>
+}

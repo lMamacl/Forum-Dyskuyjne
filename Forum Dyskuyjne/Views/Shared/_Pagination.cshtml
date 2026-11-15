@@ -1,0 +1,50 @@
+@*
+    Wspólna paginacja list. Model:
+      Action     — nazwa akcji kontrolera
+      RouteValues — dodatkowe parametry trasy (np. forumId, id, q)
+      Page, TotalPages
+*@
+@model Forum_Dyskuyjne.Models.ViewModels.PaginationViewModel
+@if (Model.TotalPages > 1)
+{
+    <nav class="mt-4" aria-label="Stronicowanie">
+        <ul class="pagination justify-content-center flex-wrap">
+            <li class="page-item @(Model.Page <= 1 ? "disabled" : "")">
+                <a class="page-link"
+                   asp-action="@Model.Action"
+                   asp-all-route-data="@Model.RouteValuesWithPage(Model.Page - 1)">
+                    <i class="bi bi-chevron-left"></i><span class="visually-hidden">Poprzednia</span>
+                </a>
+            </li>
+
+            @for (var p = 1; p <= Model.TotalPages; p++)
+            {
+                var isCurrent = p == Model.Page;
+                var skipEdge = (p == 1 || p == Model.TotalPages) || Math.Abs(p - Model.Page) <= 2;
+                var ellipsis = !skipEdge && Math.Abs(p - Model.Page) == 3;
+                if (ellipsis)
+                {
+                    <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                    continue;
+                }
+                if (!skipEdge && Math.Abs(p - Model.Page) > 3)
+                {
+                    continue;
+                }
+                <li class="page-item @(isCurrent ? "active" : "")" aria-current="@(isCurrent ? "page" : null)">
+                    <a class="page-link"
+                       asp-action="@Model.Action"
+                       asp-all-route-data="@Model.RouteValuesWithPage(p)">@p</a>
+                </li>
+            }
+
+            <li class="page-item @(Model.Page >= Model.TotalPages ? "disabled" : "")">
+                <a class="page-link"
+                   asp-action="@Model.Action"
+                   asp-all-route-data="@Model.RouteValuesWithPage(Model.Page + 1)">
+                    <i class="bi bi-chevron-right"></i><span class="visually-hidden">Następna</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+}
