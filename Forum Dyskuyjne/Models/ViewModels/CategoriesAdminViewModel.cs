@@ -25,7 +25,7 @@ public class CategoryFormViewModel
 
     [StringLength(300, ErrorMessage = "Opis może mieć maksymalnie 300 znaków.")]
     [Display(Name = "Opis")]
-    public string Description { get; set; } = string.Empty;
+    public string? Description { get; set; }
 
     [Range(0, 999, ErrorMessage = "Kolejność musi być liczbą z zakresu 0–999.")]
     [Display(Name = "Kolejność wyświetlania")]

@@ -100,6 +100,10 @@ public static class SeedData
         Replies(s, 13, now, ("kowalski", "Bez sensownego opisu i tagów takie wpisy trudno potem odnaleźć — polecam od razu uzupełnić."));
         Replies(s, 17, now, ("anna.nowak", "Sprawdź, czy karta sieciowa nie negocjuje połączenia na 2,4 GHz — po zmianie kanału od razu było lepiej."));
 
+        // Demonstracja wielu tagów na jednym wątku (kategorie = tagi).
+        s.Threads.First(t => t.Id == 1).CategoryIds.Add(1);  // „Jak zacząć z C#”: Technika + Ogólne
+        s.Threads.First(t => t.Id == 8).CategoryIds.Add(1);  // „Co dziś gracie?”: Hobby + Ogólne
+
         // ---- Ogłoszenia ---------------------------------------------------
         s.Announcements.Add(new Announcement
         {
@@ -135,11 +139,21 @@ public static class SeedData
             Description = description,
             Content = content,
             AuthorName = author,
+            CategoryIds = new List<int> { CategoryForForum(forumId) },
             IsPinned = pinned,
             CreatedAt = created,
             LastActivityAt = created
         });
     }
+
+    /// <summary>Podstawowy tag wątku w danych demo (zależny od forum); część wątków dostaje drugi tag niżej.</summary>
+    private static int CategoryForForum(int forumId) => forumId switch
+    {
+        1 or 2 => 1,   // Ogólne
+        3 or 4 => 2,   // Technika
+        5 or 6 => 3,   // Hobby
+        _ => 1
+    };
 
     private static void Replies(Snapshot s, int threadId, DateTime now, params (string Author, string Content)[] replies)
     {

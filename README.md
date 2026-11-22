@@ -30,10 +30,15 @@ ani ręczne wprowadzanie czegokolwiek.
 
 Widoki i formularze całego forum z działającą logiką demonstracyjną:
 
-- layout (topbar ze skórkami i panelu użytkownika, stopka),
+- layout (topbar ze skórkami, panelu użytkownika i zakładkami „Wątki”/„Fora”, stopka),
 - strona główna z ogłoszeniami i statystykami,
-- kategorie i fora z uprawnieniami anonimowymi,
-- lista wątków (paginacja, wyszukiwarka, wątki przyklejone),
+- **widok domyślny: przegląd kategorii i forów** z paskiem wyszukiwarki
+  wszystkich wątków,
+- lista wątków (`/Forum/Threads`): filtry — fraza, **forum**, **kategoria (tag)**,
+  sortowanie; paginacja,
+- jeden wątek należy do jednego forum (wybór w formularzu tworzenia);
+  kategorie = tagi: wątek może mieć ich kilka (min. jeden), słownik tworzy
+  administrator,
 - strona wątku z odpowiedziami i edytorem inline,
 - tworzenie/edycja/usuwanie wątków i wiadomości,
 - rejestracja, logowanie, profil, ustawienia (localStorage),

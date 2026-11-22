@@ -39,7 +39,7 @@ public class ForumFormViewModel
 
     [StringLength(300, ErrorMessage = "Opis może mieć maksymalnie 300 znaków.")]
     [Display(Name = "Opis")]
-    public string Description { get; set; } = string.Empty;
+    public string? Description { get; set; }
 
     [Required(ErrorMessage = "Wybierz kategorię.")]
     [Range(1, int.MaxValue, ErrorMessage = "Wybierz kategorię.")]

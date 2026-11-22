@@ -155,7 +155,11 @@ public class AdminController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult DeleteCategory(int id)
     {
-        if (_repository.DeleteCategory(id))
+        if (_repository.CountThreadsByCategory(id) > 0)
+        {
+            TempData["Error"] = "Nie można usunąć kategorii przypisanej do wątków. Zmień kategorię wątków lub usuń wątki.";
+        }
+        else if (_repository.DeleteCategory(id))
         {
             TempData["Success"] = "Kategoria została usunięta.";
         }
@@ -183,7 +187,7 @@ public class AdminController : Controller
                 CategoryName = categories.FirstOrDefault(c => c.Id == f.CategoryId)?.Name ?? "—",
                 AllowAnonymousView = f.AllowAnonymousView,
                 AllowAnonymousPost = f.AllowAnonymousPost,
-                ThreadCount = _repository.GetThreads(f.Id, 1, 1, null).TotalCount,
+                ThreadCount = _repository.CountThreadsInForum(f.Id),
                 ModeratorCount = f.ModeratorIds.Count
             }).ToList(),
             CategoryOptions = categories.Select(c => new CategoryOptionViewModel { Id = c.Id, Name = c.Name }).ToList(),

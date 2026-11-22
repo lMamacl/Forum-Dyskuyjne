@@ -1,20 +1,55 @@
 @model ThreadListViewModel
 @{
-    ViewData["Title"] = $"{Model.ForumName} — lista wątków";
+    ViewData["Title"] = string.IsNullOrEmpty(Model.ForumName) ? "Wszystkie wątki" : $"{Model.ForumName} — wątki";
+    var hasForumContext = Model.ForumId.HasValue;
+
+    // Paginacja i „wyczyść filtry” zachowują kontekst forum.
+    var routeValues = new Dictionary<string, string>();
+    if (!string.IsNullOrEmpty(Model.Query)) { routeValues["q"] = Model.Query; }
+    if (Model.ForumId.HasValue) { routeValues["forumId"] = Model.ForumId.Value.ToString(); }
+    if (Model.CategoryId.HasValue) { routeValues["categoryId"] = Model.CategoryId.Value.ToString(); }
+    if (Model.Sort != "active") { routeValues["sort"] = Model.Sort; }
+    var pager = new PaginationViewModel
+    {
+        Action = "Threads",
+        Page = Model.Page,
+        TotalPages = Model.TotalPages,
+        RouteValues = routeValues
+    };
+    var clearFiltersUrl = Url.Action("Threads");
 }
 
-<nav class="thread-breadcrumbs meta-line mb-2" aria-label="Okruszki">
-    <a asp-action="Index">Kategorie i fora</a>
-    <span class="mx-1">/</span>
-    <span>@Model.CategoryName</span>
-    <span class="mx-1">/</span>
-    <span class="fw-semibold text-reset">@Model.ForumName</span>
-</nav>
-
+@* --- Nagłówek: kontekst forum (z kliknięcia w Browse) lub lista globalna -- *@
 <div class="section-head">
     <div>
-        <h1 class="section-title">@Model.ForumName</h1>
-        <p class="section-sub">@Model.ForumDescription</p>
+        <h1 class="section-title">
+            @if (hasForumContext)
+            {
+                <text>@Model.ForumName</text>
+                <a class="badge-outline ms-1" href="@Url.Action("Threads")"
+                   title="Wyczyść kontekst forum — pokaż wszystkie wątki">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            }
+            else
+            {
+                <text>Wszystkie wątki</text>
+            }
+        </h1>
+        <p class="section-sub">
+            @if (!string.IsNullOrEmpty(Model.ForumDescription))
+            {
+                <text>@Model.ForumDescription</text>
+            }
+            else
+            {
+                <text>Globalna lista wątków. Użyj frazy lub panelu filtrów: forum, kategoria (tag) i sortowanie.</text>
+            }
+            @if (!string.IsNullOrEmpty(Model.CategoryName))
+            {
+                <text> Filtr tagu: <span class="badge-soft">@Model.CategoryName</span></text>
+            }
+        </p>
     </div>
     <a class="btn btn-accent" data-requires-auth
        asp-action="CreateThread" asp-route-forumId="@Model.ForumId">
@@ -22,58 +57,99 @@
     </a>
 </div>
 
-@* --- Pasek narzędzi: wyszukiwarka + licznik --------------------------- *@
-<div class="thread-toolbar">
-    <form asp-action="Threads" method="get" class="input-group">
-        <input type="hidden" name="forumId" value="@Model.ForumId" />
-        <input type="search" name="q" value="@Model.Query" class="form-control"
-               placeholder="Szukaj w wątkach i wiadomościach tego forum..." aria-label="Fraza wyszukiwana" />
-        <button class="btn btn-accent" type="submit">
-            <i class="bi bi-search"></i><span class="ms-1 d-none d-sm-inline">Szukaj</span>
+@* --- Toolbar: wyszukiwarka + przełącznik panelu filtrów ----------------- *@
+<form asp-action="Threads" method="get" id="threadSearchForm">
+    <div class="thread-toolbar">
+        <div class="input-group">
+            <input type="search" name="q" value="@Model.Query" class="form-control"
+                   placeholder="Szukaj po tytule, opisie i treści wiadomości..."
+                   aria-label="Fraza wyszukiwania" />
+            <button class="btn btn-accent" type="submit">
+                <i class="bi bi-search"></i><span class="ms-1 d-none d-sm-inline">Szukaj</span>
+            </button>
+        </div>
+
+        <button class="btn btn-outline-accent" type="button"
+                data-bs-toggle="collapse" data-bs-target="#filterPanel"
+                aria-controls="filterPanel" aria-expanded="@Model.HasActiveFilters">
+            <i class="bi bi-funnel me-1"></i>Filtry
+            @if (Model.HasActiveFilters)
+            {
+                <span class="badge-soft ms-1">aktywne</span>
+            }
         </button>
-    </form>
 
-    <span class="meta-line">
-        Wątków: <strong class="text-reset">@Model.TotalCount</strong>
-        @if (!string.IsNullOrEmpty(Model.Query))
-        {
-            <span class="badge-soft ms-2">
-                Wyniki dla: „@Model.Query”
-                <a asp-action="Threads" asp-route-forumId="@Model.ForumId"
-                   class="ms-1 text-reset" title="Wyczyść wyszukiwanie">
-                    <i class="bi bi-x-lg"></i>
-                </a>
-            </span>
-        }
-    </span>
-</div>
+        <span class="meta-line ms-auto">
+            Wątków: <strong class="text-reset">@Model.TotalCount</strong>
+        </span>
+    </div>
 
-@* --- Lista wątków ------------------------------------------------------ *@
-@{
-    var pager = new PaginationViewModel
-    {
-        Action = "Threads",
-        Page = Model.Page,
-        TotalPages = Model.TotalPages,
-        RouteValues = new Dictionary<string, string>
-        {
-            ["forumId"] = Model.ForumId.ToString(),
-            ["q"] = Model.Query ?? string.Empty
-        }
-    };
-}
+    @* --- Panel filtrów (fraza w toolbarze; tu: kategoria wątku, sortowanie) --- *@
+    <div class="collapse @(Model.HasActiveFilters ? "show" : "")" id="filterPanel">
+        <div class="surface-card p-3 mb-3">
+            <div class="admin-form-grid">
+                <div>
+                    <label class="form-label" for="filterForum">Forum</label>
+                    <select name="forumId" id="filterForum" class="form-select">
+                        <option value="">Wszystkie fora</option>
+                        @foreach (var forum in Model.Forums)
+                        {
+                            <option value="@forum.Id"
+                                    selected="@(Model.ForumId == forum.Id ? "selected" : null)">@forum.Name</option>
+                        }
+                    </select>
+                </div>
 
+                <div>
+                    <label class="form-label" for="filterCategory">Kategoria (tag)</label>
+                    <select name="categoryId" id="filterCategory" class="form-select">
+                        <option value="">Wszystkie kategorie</option>
+                        @foreach (var category in Model.Categories)
+                        {
+                            <option value="@category.Id"
+                                    selected="@(Model.CategoryId == category.Id ? "selected" : null)">@category.Name</option>
+                        }
+                    </select>
+                </div>
+
+                <div>
+                    <label class="form-label" for="filterSort">Sortowanie</label>
+                    <select name="sort" id="filterSort" class="form-select">
+                        <option value="active" selected="@(Model.Sort == "active" ? "selected" : null)">Najaktywniejsze</option>
+                        <option value="newest" selected="@(Model.Sort == "newest" ? "selected" : null)">Najnowsze</option>
+                        <option value="replies" selected="@(Model.Sort == "replies" ? "selected" : null)">Najwięcej odpowiedzi</option>
+                        <option value="views" selected="@(Model.Sort == "views" ? "selected" : null)">Najwięcej odsłon</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-3">
+                @if (Model.HasActiveFilters)
+                {
+                    <a class="btn btn-outline-secondary btn-sm" href="@clearFiltersUrl">
+                        <i class="bi bi-x-lg me-1"></i>Wyczyść filtry
+                    </a>
+                }
+                <button type="submit" class="btn btn-accent btn-sm">
+                    <i class="bi bi-check2 me-1"></i>Zastosuj
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+@* --- Lista wyników ------------------------------------------------------ *@
 @if (Model.Threads.Count == 0)
 {
     <div class="empty-state">
         <i class="bi bi-search"></i>
-        @if (!string.IsNullOrEmpty(Model.Query))
+        @if (Model.HasActiveFilters)
         {
-            <text>Brak wątków pasujących do zapytania. Spróbuj innych słów kluczowych.</text>
+            <text>Brak wątków pasujących do wybranych filtrów.</text>
         }
         else
         {
-            <text>W tym forum nie ma jeszcze wątków — załóż pierwszy.</text>
+            <text>Nie ma jeszcze żadnych wątków — załóż pierwszy.</text>
         }
     </div>
 }
@@ -92,6 +168,13 @@ else
                     @if (thread.IsPinned)
                     {
                         <span class="badge-pinned"><i class="bi bi-pin-angle-fill me-1"></i>Przyklejony</span>
+                    }
+                    @* Na liście globalnej pokazujemy źródłowe forum; przy kontekście forum jest zbędne. *@
+                    @if (!hasForumContext && !string.IsNullOrEmpty(thread.ForumName))
+                    {
+                        <a class="badge-outline" asp-action="Threads" asp-route-forumId="@thread.ForumId">
+                            <i class="bi bi-folder2 me-1"></i>@thread.ForumName
+                        </a>
                     }
                 </h2>
 

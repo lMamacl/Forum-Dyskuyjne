@@ -1,13 +1,13 @@
 @model CreateThreadViewModel
 @{
     ViewData["Title"] = "Nowy wątek";
-    var backForumId = Model.ForumId > 0 ? Model.ForumId : 0;
 }
 
 <div class="form-card wide">
     <h1 class="form-title">Załóż nowy wątek</h1>
     <p class="form-subtitle">
-        Wypełnij formularz — tytuł i treść są wymagane. Po opublikowaniu wątek pojawi się na liście forum.
+        Wybierz forum (miejsce publikacji — jeden wątek należy do jednego forum) oraz
+        co najmniej jedną kategorię (tag). Tytuł i treść są wymagane.
     </p>
 
     <form asp-action="CreateThread" method="post" id="createThreadForm">
@@ -16,10 +16,30 @@
         <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
 
         <div class="row g-3">
-            <div class="col-12">
+            <div class="col-md-6">
                 <label asp-for="ForumId" class="form-label"></label>
                 <select asp-for="ForumId" asp-items="ViewBag.Forums" class="form-select"></select>
                 <span asp-validation-for="ForumId" class="text-validation"></span>
+                <div class="form-text">Decyduje o uprawnieniach do czytania i pisania oraz o moderacji.</div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Kategorie (tagi)</label>
+                <div class="border rounded p-2" style="max-height: 210px; overflow-y: auto;">
+                    @foreach (var item in (SelectList)ViewBag.Categories)
+                    {
+                        int.TryParse(item.Value, out var tagId);
+                        var isChecked = Model.CategoryIds is not null && Model.CategoryIds.Contains(tagId);
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="CategoryIds"
+                                   value="@item.Value" id="cat-@item.Value"
+                                   checked="@(isChecked ? "checked" : null)" />
+                            <label class="form-check-label" for="cat-@item.Value">@item.Text</label>
+                        </div>
+                    }
+                </div>
+                <span asp-validation-for="CategoryIds" class="text-validation"></span>
+                <div class="form-text">Kilka tagów opisujących wątek — zaznacz przynajmniej jeden. Słownik kategorii tworzy administrator.</div>
             </div>
 
             <div class="col-12">
@@ -51,15 +71,8 @@
             </div>
 
             <div class="col-12 d-flex gap-2 justify-content-end align-items-center flex-wrap">
-                @if (backForumId > 0)
-                {
-                    <a class="btn btn-outline-secondary"
-                       asp-action="Threads" asp-route-forumId="@backForumId">Anuluj</a>
-                }
-                else
-                {
-                    <a class="btn btn-outline-secondary" asp-action="Index">Anuluj</a>
-                }
+                <a class="btn btn-outline-secondary"
+                   asp-action="Threads" asp-route-forumId="@Model.ForumId">Anuluj</a>
                 <button type="submit" class="btn btn-accent">
                     <i class="bi bi-plus-lg me-1"></i>Utwórz wątek
                 </button>

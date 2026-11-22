@@ -6,7 +6,9 @@ public class ThreadDetailsViewModel
     public int Id { get; set; }
     public int ForumId { get; set; }
     public string ForumName { get; set; } = string.Empty;
-    public string CategoryName { get; set; } = string.Empty;
+
+    /// <summary>Kategorie (tagi) wątku — pod tytułem, linkują do listy z filtrem tagu.</summary>
+    public List<ThreadTagViewModel> Tags { get; set; } = new();
 
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
@@ -37,4 +39,11 @@ public class MessageViewModel
     public string Content { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public DateTime? EditedAt { get; set; }
+}
+
+/// <summary>Jeden tag (kategoria) wątku na stronie wątku.</summary>
+public class ThreadTagViewModel
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
 }

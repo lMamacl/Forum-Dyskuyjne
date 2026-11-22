@@ -7,8 +7,10 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 namespace Forum_Dyskuyjne.Controllers;
 
 /// <summary>
-/// Kontroler treści forum: przegląd kategorii, lista wątków (paginacja, wyszukiwanie),
-/// strona wątku, tworzenie wątku, edycja i usuwanie wiadomości.
+/// Kontroler treści forum.
+///   * Index  — widok domyślny: globalna lista wszystkich wątków + panel filtrów (fraza, forum, kategoria, sortowanie)
+///   * Browse — przegląd kategorii i forów (zakładka „Fora”; wymaganie punktowane)
+///   * Thread / CreateThread / Reply / EditMessage / DeleteMessage — obsługa wątków i wiadomości
 ///
 /// Uwagi bezpieczeństwa (do zamknięcia w etapie 2 — patrz docs/02):
 ///  * w etapie 1 nie ma sesji serwerowej, więc akcje zapisu nie weryfikują tożsamości;
@@ -25,10 +27,27 @@ public class ForumController : Controller
         _repository = repository;
     }
 
-    // --- Przegląd kategorii i forów ---------------------------------------
+    // --- Widok domyślny: przegląd kategorii i forów ------------------------
 
-    public IActionResult Index()
+    /// <summary>
+    /// Widok domyślny sekcji forum: kategorie → fora. Parametry filtra w URL
+    /// (q/forumId/categoryId/sort/page) przekierowywują na listę wątków —
+    /// dzięki temu stare adresy działają, a domyślnie zawsze otwiera się przegląd.
+    /// </summary>
+    public IActionResult Index(string? q, int? forumId, int? categoryId, string? sort, int page = 1) =>
+        BrowseOrRedirect(q, forumId, categoryId, sort, page);
+
+    /// <summary>Alias zgodny ze starszym adresem /Forum/Browse.</summary>
+    public IActionResult Browse(string? q, int? forumId, int? categoryId, string? sort, int page = 1) =>
+        BrowseOrRedirect(q, forumId, categoryId, sort, page);
+
+    private IActionResult BrowseOrRedirect(string? q, int? forumId, int? categoryId, string? sort, int page)
     {
+        if (q is not null || forumId is not null || categoryId is not null || sort is not null || page > 1)
+        {
+            return RedirectToAction(nameof(Threads), new { q, forumId, categoryId, sort, page });
+        }
+
         var sections = _repository.GetCategories()
             .Select(c => new CategorySectionViewModel
             {
@@ -38,13 +57,83 @@ public class ForumController : Controller
             .Where(s => s.Forums.Count > 0 || !string.IsNullOrEmpty(s.Category.Description))
             .ToList();
 
-        ViewData["ActiveNav"] = "forum";
-        return View(new ForumIndexViewModel { Sections = sections });
+        ViewData["ActiveNav"] = "browse";
+        return View("Browse", new ForumIndexViewModel { Sections = sections });
+    }
+
+    // --- Lista wątków (kontekst forum lub wszystkie) + filtry --------------
+
+    public IActionResult Threads(string? q, int? forumId, int? categoryId, string? sort, int page = 1)
+    {
+        var criteria = new ForumSearchCriteria
+        {
+            Query = q,
+            ForumId = forumId,
+            CategoryId = categoryId,
+            Sort = ParseSort(sort),
+            Page = page,
+            PageSize = ReadPageSizeFromCookie()
+        };
+
+        var result = _repository.SearchThreads(criteria);
+        var forums = _repository.GetForums();
+        var categories = _repository.GetCategories();
+
+        var activeForum = forumId is null ? null : _repository.GetForum(forumId.Value);
+        var activeCategory = categoryId is null ? null : _repository.GetCategory(categoryId.Value);
+
+        var items = result.Items.Select(t =>
+        {
+            var threadForum = _repository.GetForum(t.ForumId);
+            return new ThreadListItemViewModel
+            {
+                Id = t.Id,
+                ForumId = t.ForumId,
+                ForumName = threadForum?.Name ?? string.Empty,
+                Title = t.Title,
+                Description = t.Description,
+                AuthorName = t.AuthorName,
+                IsPinned = t.IsPinned,
+                CreatedAt = t.CreatedAt,
+                LastActivityAt = t.LastActivityAt,
+                ReplyCount = _repository.CountMessagesInThread(t.Id),
+                ViewCount = t.ViewCount,
+                LastAuthorName = _repository.GetLastMessage(t.Id)?.AuthorName
+            };
+        }).ToList();
+
+        var vm = new ThreadListViewModel
+        {
+            ForumId = forumId,
+            CategoryId = categoryId,
+            Sort = sort ?? "active",
+            Query = q,
+            ForumName = activeForum?.Name,
+            ForumDescription = activeForum?.Description,
+            CategoryName = activeCategory?.Name,
+            Threads = items,
+            Page = result.Page,
+            PageSize = result.PageSize,
+            TotalPages = result.TotalPages,
+            TotalCount = result.TotalCount,
+            Forums = forums.Select(f => new ForumOptionViewModel { Id = f.Id, Name = f.Name }).ToList(),
+            Categories = categories.Select(c => new CategoryOptionViewModel { Id = c.Id, Name = c.Name }).ToList()
+        };
+
+        ViewData["ActiveNav"] = "browse";
+        return View(vm);
     }
 
     private ForumCardViewModel BuildForumCard(Forum forum)
     {
-        var lastThread = _repository.GetThreads(forum.Id, 1, 1, null).Items.FirstOrDefault();
+        var lastThread = _repository.SearchThreads(new ForumSearchCriteria
+        {
+            ForumId = forum.Id,
+            Sort = ThreadSort.Active,
+            Page = 1,
+            PageSize = 1
+        }).Items.FirstOrDefault();
+
         return new ForumCardViewModel
         {
             Id = forum.Id,
@@ -52,7 +141,7 @@ public class ForumController : Controller
             Description = forum.Description,
             AllowAnonymousView = forum.AllowAnonymousView,
             AllowAnonymousPost = forum.AllowAnonymousPost,
-            ThreadCount = _repository.GetThreads(forum.Id, 1, 1, null).TotalCount,
+            ThreadCount = _repository.CountThreadsInForum(forum.Id),
             MessageCount = _repository.CountMessagesInForum(forum.Id),
             ModeratorNames = forum.ModeratorIds
                 .Select(id => _repository.GetUser(id)?.Username)
@@ -63,50 +152,6 @@ public class ForumController : Controller
             LastThreadTitle = lastThread?.Title,
             LastThreadAt = lastThread?.LastActivityAt
         };
-    }
-
-    // --- Lista wątków ------------------------------------------------------
-
-    public IActionResult Threads(int forumId, int page = 1, string? q = null)
-    {
-        var forum = _repository.GetForum(forumId);
-        if (forum is null) return NotFound();
-
-        var pageSize = ReadPageSizeFromCookie();
-        var result = _repository.GetThreads(forumId, page, pageSize, q);
-
-        var items = result.Items.Select(t => new ThreadListItemViewModel
-        {
-            Id = t.Id,
-            Title = t.Title,
-            Description = t.Description,
-            AuthorName = t.AuthorName,
-            IsPinned = t.IsPinned,
-            CreatedAt = t.CreatedAt,
-            LastActivityAt = t.LastActivityAt,
-            ReplyCount = _repository.CountMessagesInThread(t.Id),
-            ViewCount = t.ViewCount,
-            LastAuthorName = _repository.GetLastMessage(t.Id)?.AuthorName
-        }).ToList();
-
-        var category = _repository.GetCategory(forum.CategoryId);
-
-        var vm = new ThreadListViewModel
-        {
-            ForumId = forum.Id,
-            ForumName = forum.Name,
-            ForumDescription = forum.Description,
-            CategoryName = category?.Name ?? string.Empty,
-            Threads = items,
-            Page = result.Page,
-            PageSize = result.PageSize,
-            TotalPages = result.TotalPages,
-            TotalCount = result.TotalCount,
-            Query = q
-        };
-
-        ViewData["ActiveNav"] = "forum";
-        return View(vm);
     }
 
     // --- Strona wątku ------------------------------------------------------
@@ -120,7 +165,6 @@ public class ForumController : Controller
         thread = _repository.GetThread(id)!;
 
         var forum = _repository.GetForum(thread.ForumId);
-        var category = forum is null ? null : _repository.GetCategory(forum.CategoryId);
         var pageSize = ReadPageSizeFromCookie();
         var messages = _repository.GetMessages(id, page, pageSize);
         var author = _repository.GetUserByUsername(thread.AuthorName);
@@ -130,7 +174,6 @@ public class ForumController : Controller
             Id = thread.Id,
             ForumId = thread.ForumId,
             ForumName = forum?.Name ?? string.Empty,
-            CategoryName = category?.Name ?? string.Empty,
             Title = thread.Title,
             Description = thread.Description,
             Content = thread.Content,
@@ -145,14 +188,18 @@ public class ForumController : Controller
             PageSize = messages.PageSize,
             TotalPages = messages.TotalPages,
             Reply = new ReplyViewModel { ThreadId = thread.Id },
-            Messages = messages.Items.Select(m => BuildMessageViewModel(m, author)).ToList()
+            Tags = _repository.GetCategories()
+                .Where(c => thread.CategoryIds.Contains(c.Id))
+                .Select(c => new ThreadTagViewModel { Id = c.Id, Name = c.Name })
+                .ToList(),
+            Messages = messages.Items.Select(m => BuildMessageViewModel(m)).ToList()
         };
 
-        ViewData["ActiveNav"] = "forum";
+        ViewData["ActiveNav"] = "browse";
         return View(vm);
     }
 
-    private MessageViewModel BuildMessageViewModel(ForumMessage message, UserAccount? threadAuthor)
+    private MessageViewModel BuildMessageViewModel(ForumMessage message)
     {
         var author = _repository.GetUserByUsername(message.AuthorName);
         return new MessageViewModel
@@ -176,10 +223,13 @@ public class ForumController : Controller
         var forums = _repository.GetForums();
         if (forums.Count == 0) return RedirectToAction(nameof(Index));
 
+        var categories = _repository.GetCategories();
+        if (categories.Count == 0) return RedirectToAction(nameof(Index));
+
+        // Forum: prezentowane z kontekstu (lista wątków danego forum), użytkownik może je zmienić.
         var validForumId = forums.Any(f => f.Id == forumId) ? forumId : forums[0].Id;
         var vm = new CreateThreadViewModel { ForumId = validForumId };
-        ViewData["Forums"] = new SelectList(
-            forums.Select(f => new { f.Id, f.Name }), "Id", "Name", validForumId);
+        PopulateCreationSelects(validForumId);
 
         return View(vm);
     }
@@ -188,22 +238,38 @@ public class ForumController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult CreateThread(CreateThreadViewModel model)
     {
-        var forums = _repository.GetForums();
-        ViewData["Forums"] = new SelectList(
-            forums.Select(f => new { f.Id, f.Name }), "Id", "Name", model.ForumId);
+        // Tagi: unikalne i co najmniej jeden; wszystkie muszą istnieć w słowniku admina.
+        var chosenCategoryIds = (model.CategoryIds ?? new List<int>()).Distinct().ToList();
+        PopulateCreationSelects(model.ForumId, chosenCategoryIds);
+
+        if (ModelState.IsValid)
+        {
+            if (chosenCategoryIds.Count == 0)
+            {
+                ModelState.AddModelError(nameof(model.CategoryIds), "Wybierz co najmniej jedną kategorię (tag).");
+            }
+            else
+            {
+                var knownIds = _repository.GetCategories().Select(c => c.Id).ToHashSet();
+                if (chosenCategoryIds.Any(id => !knownIds.Contains(id)))
+                {
+                    ModelState.AddModelError(nameof(model.CategoryIds), "Wybrana kategoria nie istnieje.");
+                }
+            }
+
+            if (_repository.GetForum(model.ForumId) is null)
+            {
+                ModelState.AddModelError(nameof(model.ForumId), "Wybrane forum nie istnieje.");
+            }
+        }
 
         if (!ModelState.IsValid) return View(model);
-
-        if (_repository.GetForum(model.ForumId) is null)
-        {
-            ModelState.AddModelError(nameof(model.ForumId), "Wybrane forum nie istnieje.");
-            return View(model);
-        }
 
         // TODO (etap 2): IsPinned ustawia wyłącznie administrator — weryfikacja po stronie serwera.
         var thread = new ForumThread
         {
             ForumId = model.ForumId,
+            CategoryIds = chosenCategoryIds,
             Title = model.Title.Trim(),
             Description = model.Description?.Trim() ?? string.Empty,
             Content = model.Content.Trim(),
@@ -214,6 +280,14 @@ public class ForumController : Controller
         var id = _repository.AddThread(thread);
         TempData["Success"] = "Wątek został utworzony.";
         return RedirectToAction(nameof(Thread), new { id });
+    }
+
+    private void PopulateCreationSelects(int forumId, List<int>? selectedCategoryIds = null)
+    {
+        ViewData["Forums"] = new SelectList(
+            _repository.GetForums().Select(f => new { f.Id, f.Name }), "Id", "Name", forumId);
+        ViewData["Categories"] = new SelectList(
+            _repository.GetCategories().Select(c => new { c.Id, c.Name }), "Id", "Name");
     }
 
     // --- Odpowiedź w wątku -------------------------------------------------
@@ -306,6 +380,14 @@ public class ForumController : Controller
         var author = Request.Form["AuthorName"].FirstOrDefault();
         return string.IsNullOrWhiteSpace(author) ? "Gość" : author.Trim();
     }
+
+    private static ThreadSort ParseSort(string? sort) => sort switch
+    {
+        "newest" => ThreadSort.Newest,
+        "replies" => ThreadSort.Replies,
+        "views" => ThreadSort.Views,
+        _ => ThreadSort.Active
+    };
 
     /// <summary>Liczba wiadomości na stronie: cookie ustawiane w profilu (w etapie 2 — ustawienie konta).</summary>
     private int ReadPageSizeFromCookie()

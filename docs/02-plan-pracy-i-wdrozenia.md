@@ -14,10 +14,10 @@ Skorupa rozwiązania jest kompletna i działa end-to-end bez bazy danych:
 |---|---|
 | Layout: topbar (nawigacja, panel użytkownika, 3 motywy, ukryty panel admina) + stopka | gotowe |
 | Strona główna: powitanie, statystyki, ogłoszenia, ostatnie wątki | gotowe |
-| Kategorie i fora: lista z uprawnieniami anonimowymi, moderatorami, statystykami | gotowe |
-| Lista wątków: paginacja, wyszukiwarka, badge „przyklejony”, statystyki wiersza | gotowe |
+| **Widok domyślny `/Forum`**: przegląd kategorii i forów (wymaganie punktowane) + pasek wyszukiwarki wszystkich wątków | gotowe |
+| Lista wątków `/Forum/Threads`: panel filtrów (fraza, forum, kategoria-tag, sortowanie), paginacja, badge „przyklejony” | gotowe |
 | Strona wątku: wiadomość inicjująca, odpowiedzi z paginacją, edytor inline, licznik odsłon | gotowe |
-| Tworzenie wątku, edycja/usuwanie wiadomości (z perspektywą moderacji) | gotowe |
+| Tworzenie wątku: **wybór forum (jedno)** + **kategorie-tagi (wiele, min. 1)**, edycja/usuwanie wiadomości | gotowe |
 | Rejestracja i logowanie z walidacją po stronie klienta (localStorage + `auth.js`) | gotowe |
 | Profil: awatar, ranga, statystyki, ostatnie wypowiedzi | gotowe |
 | Ustawienia: konto, hasło, liczba stron, bezczynność, motyw, awatar (z walidacją) | gotowe |
@@ -162,6 +162,7 @@ W etapie 2 API pozostaje bez zmian; implementacja przechodzi na HTTP + Identity.
 - Paginacja: deklaracja `var pager = new PaginationViewModel {...}` w `@{ }`, następnie `<partial name="_Pagination" model="pager" />`.
 - Formularze admina: pola z prefiksem `Form.*`, parametr akcji nazany `Form`.
 - Prefiks `Reply.*` w formularzu odpowiedzi → parametr akcji `Reply`.
+- Tworzenie wątku: `ForumId` jako select (preselekcja z `?forumId=`), `CategoryIds` jako lista tagów — walidacja „min. 1 tag” po stronie serwera.
 - Cookie paginacji: `forum.pageSize` (zakres 5–50, ustawiane w Ustawieniach).
 
 ### 5.4. Trasy
@@ -169,8 +170,8 @@ W etapie 2 API pozostaje bez zmian; implementacja przechodzi na HTTP + Identity.
 | Trasa | Kontroler |
 |---|---|
 | `GET /` | Home/Index |
-| `GET /Forum` | Forum/Index (kategorie i fora) |
-| `GET /Forum/Threads?forumId=&page=&q=` | Forum/Threads |
+| `GET /Forum` (alias `/Forum/Browse`; z parametrami → redirect na listę) | Forum/Index — widok domyślny: przegląd kategorii i forów |
+| `GET /Forum/Threads?q=&forumId=&categoryId=&sort=&page=` | Forum/Threads — lista wątków (kontekst forum lub globalna) + filtry |
 | `GET /Forum/Thread?id=&page=` | Forum/Thread |
 | `GET,POST /Forum/CreateThread` | Forum/CreateThread |
 | `GET,POST /Forum/EditMessage`, `POST /Forum/DeleteMessage` | Forum |
@@ -207,12 +208,12 @@ Kolejność ograniczała ryzyko „przebudowy wszystkiego naraz”; każdy krok 
 Uruchom aplikację i przejdź po kolei (~10 minut):
 
 1. **Strona główna** — statystyki, ogłoszenia, ostatnie wątki; przyciski logowania dla gościa.
-2. **Wątki (topbar)** — kategorie z forami; widoczne badge uprawnień anonimowych i moderatorzy.
-3. **Forum „Programowanie”** — 12 wątków → paginacja, dwa przyklejone na górze, statystyki odpowiedzi/odsłon.
-4. **Wyszukiwanie** — fraza „EF” w tym forum zawęża listę; wyczyść ikoną X.
+2. **Fora (domyślnie, topbar)** — przegląd kategorii z forami: badge uprawnień anonimowych i moderatorzy, statystyki; pasek na górze: wyszukiwarka wszystkich wątków + „Wszystkie wątki” + „Nowy wątek”.
+3. **Kliknięcie forum** — otwiera listę wątków tego forum (kontekst w nagłówku z przyciskiem wyczyszczenia, przyklejone na górze, chipy forów znikają); „Wszystkie wątki” prowadzi do listy globalnej.
+4. **Wyszukiwanie i filtry** — fraza „EF” na liście zawęża wyniki; panel „Filtry” zawiera forum, kategorię (tag) i sortowanie; „Wyczyść filtry” wraca do pełnej listy.
 5. **Nowy wątek jako gość** — klik przekierowuje do logowania.
 6. **Logowanie jako `admin@forum.pl` / `Admin123!`** — topbar pokazuje nazwę; dropdown ma „Panel administracyjny”.
-7. **Nowy wątek** — formularz z walidacją (spróbuj krótkiego tytułu), po zapisie wątek widoczny; checkbox „przyklej” widoczny tylko dla admina.
+7. **Nowy wątek** — formularz: wybór forum (jedno) + kategorie-tagi na checkboxach (spróbuj zapisać bez żadnego tagu — błąd walidacji), tytuł i treść wymagane, opis opcjonalny; po zapisie wątek widoczny na liście z tagami na stronie wątku; checkbox „przyklej” tylko dla admina.
 8. **Strona wątku** — licznik odsłon rośnie, odpowiedź dodaje się na dole; przyciski Edytuj/Usuń widoczne dla admina; usuwanie pyta o potwierdzenie.
 9. **Profil** — awatar, ranga, statystyki, ostatnie wypowiedzi.
 10. **Ustawienia** — zmień liczbę wiadomości na stronie (np. 5) → wróć na listę wątków: mniej pozycji; zmień motyw (3 warianty); zmień hasło; wczytaj avatar z limitem 200 kB i 512 px (próbuj większego — komunikat błędu).

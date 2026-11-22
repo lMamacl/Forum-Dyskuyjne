@@ -141,25 +141,53 @@ public sealed class InMemoryForumRepository : IForumRepository
 
     // --- Wątki -------------------------------------------------------------
 
-    public PagedResult<ForumThread> GetThreads(int forumId, int page, int pageSize, string? query)
+    public PagedResult<ForumThread> SearchThreads(ForumSearchCriteria criteria)
     {
         lock (_gate)
         {
-            var query2 = query?.Trim();
-            IEnumerable<ForumThread> result = _threads.Where(t => t.ForumId == forumId);
+            IEnumerable<ForumThread> result = _threads;
 
-            if (!string.IsNullOrEmpty(query2))
+            if (criteria.ForumId is not null)
             {
-                var terms = query2.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                var forumId = criteria.ForumId.Value;
+                result = result.Where(t => t.ForumId == forumId);
+            }
+
+            if (criteria.CategoryId is not null)
+            {
+                var categoryId = criteria.CategoryId.Value;
+                result = result.Where(t => t.CategoryIds.Contains(categoryId));
+            }
+
+            var query = criteria.Query?.Trim();
+            if (!string.IsNullOrEmpty(query))
+            {
+                var terms = query.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                 result = result.Where(t => terms.All(term => MatchesThread(t, term)));
             }
 
-            var ordered = result
-                .OrderByDescending(t => t.IsPinned)
-                .ThenByDescending(t => t.LastActivityAt)
-                .ToList();
+            var list = result.ToList();
+            var replyCounts = _messages
+                .GroupBy(m => m.ThreadId)
+                .ToDictionary(g => g.Key, g => g.Count());
 
-            return Page(ordered, page, pageSize);
+            // Przyklejone na górze wyłącznie przy przeglądzie konkretnego forum (wymaganie punktowane);
+            // widok globalny sortuje wyłącznie wg wybranego kryterium.
+            IOrderedEnumerable<ForumThread> ordered;
+            var pinnedFirst = criteria.ForumId is not null;
+            ordered = criteria.Sort switch
+            {
+                ThreadSort.Newest when pinnedFirst => list.OrderByDescending(t => t.IsPinned).ThenByDescending(t => t.CreatedAt),
+                ThreadSort.Newest => list.OrderByDescending(t => t.CreatedAt),
+                ThreadSort.Replies when pinnedFirst => list.OrderByDescending(t => t.IsPinned).ThenByDescending(t => replyCounts.GetValueOrDefault(t.Id)),
+                ThreadSort.Replies => list.OrderByDescending(t => replyCounts.GetValueOrDefault(t.Id)),
+                ThreadSort.Views when pinnedFirst => list.OrderByDescending(t => t.IsPinned).ThenByDescending(t => t.ViewCount),
+                ThreadSort.Views => list.OrderByDescending(t => t.ViewCount),
+                _ when pinnedFirst => list.OrderByDescending(t => t.IsPinned).ThenByDescending(t => t.LastActivityAt),
+                _ => list.OrderByDescending(t => t.LastActivityAt)
+            };
+
+            return Page(ordered.ToList(), criteria.Page, criteria.PageSize);
         }
     }
 
@@ -194,6 +222,16 @@ public sealed class InMemoryForumRepository : IForumRepository
     {
         lock (_gate)
             return _threads.Count(t => string.Equals(t.AuthorName, authorName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public int CountThreadsInForum(int forumId)
+    {
+        lock (_gate) return _threads.Count(t => t.ForumId == forumId);
+    }
+
+    public int CountThreadsByCategory(int categoryId)
+    {
+        lock (_gate) return _threads.Count(t => t.CategoryIds.Contains(categoryId));
     }
 
     public void UpdateThread(ForumThread thread)

@@ -23,10 +23,13 @@ public interface IForumRepository
     void DeleteForum(int id); // kaskada: wątki i wiadomości foru
 
     // --- Wątki ------------------------------------------------------------
-    PagedResult<ForumThread> GetThreads(int forumId, int page, int pageSize, string? query);
+    /// <summary>Wyszukiwanie i filtrowanie wątków — źródło danych domyślnego widoku listy.</summary>
+    PagedResult<ForumThread> SearchThreads(ForumSearchCriteria criteria);
     ForumThread? GetThread(int id);
     int AddThread(ForumThread thread); // zwraca identyfikator nowego wątku
     int CountThreadsByAuthor(string authorName);
+    int CountThreadsInForum(int forumId);
+    int CountThreadsByCategory(int categoryId);
     void UpdateThread(ForumThread thread);
     bool DeleteThread(int id);
     void IncrementViewCount(int threadId);

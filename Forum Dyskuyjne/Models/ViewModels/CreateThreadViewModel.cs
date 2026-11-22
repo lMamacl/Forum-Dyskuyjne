@@ -10,6 +10,13 @@ public class CreateThreadViewModel
     [Display(Name = "Forum")]
     public int ForumId { get; set; }
 
+    /// <summary>
+    /// Kategorie wątku (tagi) — wiele na jeden wątek, przynajmniej jedna wymagana.
+    /// Słownik kategorii tworzy administrator w panelu administracyjnym.
+    /// </summary>
+    [Display(Name = "Kategorie (tagi)")]
+    public List<int> CategoryIds { get; set; } = new();
+
     [Required(ErrorMessage = "Podaj tytuł wątku.")]
     [StringLength(120, MinimumLength = 5, ErrorMessage = "Tytuł musi mieć od 5 do 120 znaków.")]
     [Display(Name = "Tytuł")]
@@ -17,7 +24,7 @@ public class CreateThreadViewModel
 
     [StringLength(200, ErrorMessage = "Opis może mieć maksymalnie 200 znaków.")]
     [Display(Name = "Krótki opis (pod lista wątków)")]
-    public string Description { get; set; } = string.Empty;
+    public string? Description { get; set; }
 
     [Required(ErrorMessage = "Wpisz treść wątku.")]
     [MinLength(10, ErrorMessage = "Treść musi mieć co najmniej 10 znaków.")]

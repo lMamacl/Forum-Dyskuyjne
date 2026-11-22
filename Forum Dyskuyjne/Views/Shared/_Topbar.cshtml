@@ -25,10 +25,12 @@
 
         <div class="collapse navbar-collapse" id="topbarContent">
             <ul class="navbar-nav me-auto">
+                @* Pojedyncza pozycja: przegląd kategorii i forów — tu szuka się konkretnych forum,
+                   a kliknięcie forum prowadzi do jego wątków (z listy wyników wraca się przyciskiem w nagłówku). *@
                 <li class="nav-item">
-                    <a class="nav-link @(activeNav == "forum" ? "active" : "")"
+                    <a class="nav-link @(activeNav == "browse" ? "active" : "")"
                        asp-controller="Forum" asp-action="Index">
-                        <i class="bi bi-chat-left-text me-1 d-none d-lg-inline"></i>Wątki
+                        <i class="bi bi-folder2 me-1 d-none d-lg-inline"></i>Fora
                     </a>
                 </li>
             </ul>
