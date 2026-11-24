@@ -1,0 +1,57 @@
+﻿@model Forum_Dyskusyjne.Models.Forum
+
+@{
+    ViewData["Title"] = Model.Name;
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-action="Index">Fora</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@Model.Name</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h2>@Model.Name</h2>
+        <p class="text-muted">@Model.Description</p>
+    </div>
+    <a asp-action="CreateThread" asp-route-forumId="@Model.Id" class="btn btn-primary">
+        + Nowy wątek
+    </a>
+</div>
+
+@if (!Model.Threads.Any())
+{
+    <div class="alert alert-info">W tym dziale nie ma jeszcze żadnych wątków. Załóż pierwszy!</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle border">
+            <thead class="table-light">
+                <tr>
+                    <th>Temat wątku</th>
+                    <th>Autor</th>
+                    <th>Odpowiedzi</th>
+                    <th>Data utworzenia</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var thread in Model.Threads.OrderByDescending(t => t.CreatedAt))
+                {
+                    <tr>
+                        <td>
+                            <a asp-action="Thread" asp-route-id="@thread.Id" class="fw-bold text-decoration-none text-primary">
+                                @thread.Title
+                            </a>
+                        </td>
+                        <td>@thread.AuthorUsername</td>
+                        <td><span class="badge bg-secondary">@thread.Posts.Count</span></td>
+                        <td class="text-muted small">@thread.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

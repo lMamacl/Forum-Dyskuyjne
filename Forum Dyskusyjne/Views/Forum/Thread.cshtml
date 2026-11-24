@@ -1,0 +1,47 @@
+﻿@model Forum_Dyskusyjne.Models.ForumThread
+
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-action="Index">Fora</a></li>
+        <li class="breadcrumb-item"><a asp-action="Threads" asp-route-forumId="@Model.ForumId">@Model.Forum?.Name</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@Model.Title</li>
+    </ol>
+</nav>
+
+<!-- Główny post rozpoczynający wątek -->
+<div class="card mb-4 border-primary">
+    <div class="card-header bg-primary text-white d-flex justify-content-between">
+        <span><strong>@Model.AuthorUsername</strong> rozpoczął dyskusję:</span>
+        <small>@Model.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</small>
+    </div>
+    <div class="card-body">
+        <h4 class="card-title">@Model.Title</h4>
+        <p class="card-text mt-3" style="white-space: pre-line;">@Model.Content</p>
+    </div>
+</div>
+
+<h4 class="mb-3">Odpowiedzi (@Model.Posts.Count)</h4>
+
+@if (!Model.Posts.Any())
+{
+    <p class="text-muted fst-italic">Brak odpowiedzi. Bądź pierwszy!</p>
+}
+else
+{
+    @foreach (var post in Model.Posts.OrderBy(p => p.CreatedAt))
+    {
+        <div class="card mb-3 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between border-bottom pb-2 mb-2">
+                    <span class="fw-bold text-secondary">@post.AuthorUsername</span>
+                    <small class="text-muted">@post.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</small>
+                </div>
+                <p class="card-text" style="white-space: pre-line;">@post.Content</p>
+            </div>
+        </div>
+    }
+}

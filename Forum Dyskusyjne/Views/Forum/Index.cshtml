@@ -1,0 +1,35 @@
+﻿@model IEnumerable<Forum_Dyskusyjne.Models.Forum>
+
+@{
+    ViewData["Title"] = "Przegląd Forów";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Działy Forum</h2>
+</div>
+
+<div class="row g-3">
+    @foreach (var forum in Model)
+    {
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title mb-1">
+                            <a asp-action="Threads" asp-route-forumId="@forum.Id" class="text-decoration-none text-dark fw-bold">
+                                @forum.Name
+                            </a>
+                        </h5>
+                        <p class="card-text text-muted mb-0">@forum.Description</p>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-secondary mb-2 d-block">Wątki: @forum.Threads.Count</span>
+                        <a asp-action="Threads" asp-route-forumId="@forum.Id" class="btn btn-outline-primary btn-sm">
+                            Wejdź do forum
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
