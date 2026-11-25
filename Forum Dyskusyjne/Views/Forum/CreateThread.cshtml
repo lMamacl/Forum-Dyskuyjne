@@ -1,0 +1,52 @@
+@model Forum_Dyskusyjne.ViewModels.CreateThreadViewModel
+
+@{
+    ViewData["Title"] = "Nowy wątek";
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-action="Index">Fora</a></li>
+        <li class="breadcrumb-item"><a asp-action="Threads" asp-route-forumId="@Model.ForumId">@Model.ForumName</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Nowy wątek</li>
+    </ol>
+</nav>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-dark text-white">
+        <h4 class="mb-0">Utwórz nowy wątek w dziale: @Model.ForumName</h4>
+    </div>
+    <div class="card-body">
+        <form asp-action="CreateThread" method="post">
+            @* Ukryte pole przechowujące ID forum *@
+            <input type="hidden" asp-for="ForumId" />
+
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <div class="mb-3">
+                <label asp-for="Title" class="form-label fw-bold"></label>
+                <input asp-for="Title" class="form-control" placeholder="Wpisz krótki i treściwy tytuł..." />
+                <span asp-validation-for="Title" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Content" class="form-label fw-bold"></label>
+                <textarea asp-for="Content" class="form-control" rows="6" placeholder="Opisz swój problem lub temat do dyskusji..."></textarea>
+                <span asp-validation-for="Content" class="text-danger small"></span>
+            </div>
+
+            <div class="d-flex justify-content-between">
+                <a asp-action="Threads" asp-route-forumId="@Model.ForumId" class="btn btn-outline-secondary">
+                    Anuluj
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    Opublikuj wątek
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
