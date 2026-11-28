@@ -1,6 +1,7 @@
 ﻿using Forum_Dyskusyjne.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Forum_Dyskusyjne.Controllers;
 
@@ -84,7 +85,8 @@ public class ForumController : Controller
 
     // ================================================================
     // AKCJA 4a: GET /Forum/CreateThread?forumId=1
-    // Wyświetla pusty formularz tworzenia wątku w konkretnym dziale  
+    // Wyświetla pusty formularz tworzenia wątku w konkretnym dziale 
+    [Authorize] 
     [HttpGet]
     public async Task<IActionResult> CreateThread(int forumId)
     {
@@ -104,8 +106,9 @@ public class ForumController : Controller
     // ================================================================
     // AKCJA 4b: POST /Forum/CreateThread
     // Odbiera dane z formularza, waliduje je i zapisuje nowy wiersz w dbo.Threads
+    [Authorize]
     [HttpPost]
-    [ValidateAntiForgeryToken] // Zabezpieczenie przed atakami CSRF
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateThread(ViewModels.CreateThreadViewModel model)
     {
         // 1. Walidacja serwerowa
@@ -115,6 +118,12 @@ public class ForumController : Controller
             var forum = await _context.Forums.FindAsync(model.ForumId);
             model.ForumName = forum?.Name;
             return View(model);
+        }
+        var forumExists = await _context.Forums.AnyAsync(f => f.Id == model.ForumId);
+        if (!forumExists)
+        {
+            // Jeśli forum nie istnieje, zwracamy błąd (np. NotFound lub dedykowany komunikat)
+            return NotFound("Podane forum nie istnieje.");
         }
         // 2. Mapowanie ViewModelu na encję bazodanową
         // (Na Termin 1 ustawiamy tymczasowego autora, w Terminie 2 pobierzemy go z sesji usera)
@@ -136,20 +145,21 @@ public class ForumController : Controller
     // ================================================================
     // AKCJA 5: POST /Forum/AddPost
     // Dodaje nową odpowiedź do istniejącego wątku (zapis w dbo.Posts)
+    [Authorize]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AddPost(ViewModels.CreatePostViewModel model)
     {
         if (!ModelState.IsValid)
         {
-            // Jeśli pole było puste, wracamy do widoku tego samego wątku
+            TempData["PostError"] = "Odpowiedź musi mieć od 3 do 2000 znaków.";
             return RedirectToAction(nameof(Thread), new { id = model.ThreadId });
         }
         var post = new Models.ForumPost
         {
             ThreadId = model.ThreadId,
             Content = model.Content,
-            AuthorUsername = User.Identity?.IsAuthenticated == true ? User.Identity.Name! : "JanKowalski",
+            AuthorUsername = User.Identity?.Name ?? string.Empty,
             CreatedAt = DateTime.UtcNow
         };
         _context.Posts.Add(post);

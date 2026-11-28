@@ -1,4 +1,5 @@
 using Forum_Dyskusyjne.Models;
+using Microsoft.AspNetCore.Identity;
 
 namespace Forum_Dyskusyjne.Data;
 
@@ -31,21 +32,22 @@ public static class DbInitializer
         context.Forums.AddRange(forumOgólne, forumProgramowanie);
 
         // 2. Dodajemy konta demonstracyjne (na razie prosty hash/hasło pod testy)
+        var hasher = new PasswordHasher<User>();
         var admin = new User
         {
             Username = "Administrator",
             Email = "admin@forum.pl",
-            PasswordHash = "Admin123!",
             Role = UserRole.Admin
         };
+        admin.PasswordHash = hasher.HashPassword(admin, "Admin123!");
 
         var user = new User
         {
             Username = "JanKowalski",
             Email = "user@forum.pl",
-            PasswordHash = "User123!",
             Role = UserRole.User
         };
+        user.PasswordHash = hasher.HashPassword(user, "User123!");
 
         context.Users.AddRange(admin, user);
         context.SaveChanges();

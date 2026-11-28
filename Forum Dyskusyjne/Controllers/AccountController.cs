@@ -1,6 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 using Forum_Dyskusyjne.Data;
 using Forum_Dyskusyjne.Models;
 using Microsoft.AspNetCore.Authentication;
@@ -8,20 +6,17 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Forum_Dyskusyjne.Controllers;
 
 public class AccountController : Controller
 {
     private readonly ForumDbContext _context;
-    private readonly IConfiguration _configuration;
     private readonly PasswordHasher<User> _passwordHasher;
 
     public AccountController(ForumDbContext context, IConfiguration configuration)
     {
         _context = context;
-        _configuration = configuration;
         _passwordHasher = new PasswordHasher<User>();
     }
 
@@ -70,12 +65,18 @@ public class AccountController : Controller
     // WIDOK:   Views/Account/Login.cshtml
     // ZADANIE: Logowanie użytkownika do sesji przeglądarki (Cookies) i tworzenie Claimów.
     [HttpGet]
-    public IActionResult Login() => View();
+    public IActionResult Login(string? returnUrl = null, string? reason = null)
+    {
+        ViewData["ReturnUrl"] = returnUrl;
+        ViewData["Reason"] = reason;
+        return View();
+    }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Login(LoginViewModel model)
+    public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl = null)
     {
+         ViewData["ReturnUrl"] = returnUrl;
         if (!ModelState.IsValid) return View(model);
 
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == model.Username);
@@ -106,8 +107,18 @@ public class AccountController : Controller
         var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         
         // Zapisanie zaszyfrowanego ciasteczka uwierzytelniającego w przeglądarce klienta
-        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
+        var authProperties = new AuthenticationProperties
+        {
+            IsPersistent = model.RememberMe
+        };
 
+        await HttpContext.SignInAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            new ClaimsPrincipal(claimsIdentity),
+            authProperties);
+
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            return Redirect(returnUrl);
         return RedirectToAction("Index", "Home");
     }
 
@@ -122,61 +133,5 @@ public class AccountController : Controller
     {
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return RedirectToAction("Index", "Home");
-    }
-
-    // ================================================================
-    // AKCJA 4: GenerateToken()
-    // URL:     POST /Account/Token
-    // WIDOK:   Brak (Zwraca obiekt JSON dla klientów API / Postmana)
-    // ZADANIE: Weryfikacja danych i wygenerowanie zabezpieczonego tokenu JWT dla zewnętrznych żądań.
-    [HttpPost]
-    [Route("Account/Token")]
-    public async Task<IActionResult> GenerateToken([FromBody] LoginViewModel model)
-    {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
-
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == model.Username);
-        if (user == null) return Unauthorized("Nieprawidłowa nazwa użytkownika lub hasło.");
-
-        var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, model.Password);
-        if (result == PasswordVerificationResult.Failed) return Unauthorized("Nieprawidłowa nazwa użytkownika lub hasło.");
-
-        // Pobranie tajnej konfiguracji klucza i parametrów z appsettings.json / secrets.json
-        var secretKey = _configuration["JwtSettings:SecretKey"];
-        var issuer = _configuration["JwtSettings:Issuer"];
-        var audience = _configuration["JwtSettings:Audience"];
-        var expiryInMinutes = Convert.ToDouble(_configuration["JwtSettings:ExpiryInMinutes"] ?? "60");
-
-        if (string.IsNullOrEmpty(secretKey) || secretKey.Length < 32)
-        {
-            return StatusCode(500, "Błąd konfiguracji serwera: Klucz JWT jest za krótki lub nie istnieje.");
-        }
-
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-        // Tworzenie claims dla tokenu JWT - użycie ClaimTypes.Role zapewnia pełną spójność z systemem Cookie
-        var claims = new List<Claim>
-        {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email),
-            new Claim(ClaimTypes.Role, user.Role.ToString()) 
-        };
-
-        var token = new JwtSecurityToken(
-            issuer: issuer,
-            audience: audience,
-            claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(expiryInMinutes),
-            signingCredentials: creds
-        );
-
-        // Zwrócenie wygenerowanego tokenu oraz czasu jego wygaśnięcia w formacie JSON
-        return Ok(new
-        {
-            token = new JwtSecurityTokenHandler().WriteToken(token),
-            expiration = token.ValidTo
-        });
     }
 }
