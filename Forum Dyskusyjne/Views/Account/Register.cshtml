@@ -1,0 +1,66 @@
+@model RegisterViewModel
+
+@{
+    ViewData["Title"] = "Rejestracja";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <h4 class="mb-0">Załóż konto</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">
+                    Po utworzeniu konta otrzymujesz uprawnienia do tworzenia wątków i dodawania odpowiedzi.
+                </p>
+
+                <form asp-action="Register" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Username" class="form-label fw-bold"></label>
+                        <input asp-for="Username" class="form-control" autocomplete="username"
+                               placeholder="np. jan.kowalski" />
+                        <span asp-validation-for="Username" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label fw-bold"></label>
+                        <input asp-for="Email" class="form-control" autocomplete="email"
+                               placeholder="np. jan@example.com" />
+                        <span asp-validation-for="Email" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label fw-bold"></label>
+                        <input asp-for="Password" class="form-control" autocomplete="new-password"
+                               placeholder="Min. 8 znaków, litera i cyfra" />
+                        <span asp-validation-for="Password" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="ConfirmPassword" class="form-label fw-bold"></label>
+                        <input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password"
+                               placeholder="Powtórz hasło" />
+                        <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        Zarejestruj się
+                    </button>
+                </form>
+
+                <hr class="my-3" />
+
+                <p class="text-center mb-0 small">
+                    Masz już konto? <a asp-action="Login">Zaloguj się</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

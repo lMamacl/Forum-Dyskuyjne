@@ -1,0 +1,76 @@
+@model LoginViewModel
+
+@{
+    ViewData["Title"] = "Logowanie";
+    var returnUrl = ViewData["ReturnUrl"] as string;
+    var reason = ViewData["Reason"] as string;
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <h4 class="mb-0">Logowanie</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">
+                    Zaloguj się, aby zakładać wątki i odpowiadać na wiadomości.
+                </p>
+
+                @if (reason == "idle")
+                {
+                    <div class="alert alert-info" role="alert">
+                        Zostałeś wylogowany po okresie nieaktywności. Zaloguj się ponownie, aby kontynuować.
+                    </div>
+                }
+
+                <form asp-action="Login" method="post">
+                    <input type="hidden" name="returnUrl" value="@returnUrl" />
+
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Username" class="form-label fw-bold"></label>
+                        <input asp-for="Username" class="form-control" autocomplete="username"
+                               placeholder="Wpisz nazwę użytkownika..." />
+                        <span asp-validation-for="Username" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label fw-bold"></label>
+                        <input asp-for="Password" class="form-control" autocomplete="current-password"
+                               placeholder="Hasło" />
+                        <span asp-validation-for="Password" class="text-danger small"></span>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input asp-for="RememberMe" class="form-check-input" />
+                        <label asp-for="RememberMe" class="form-check-label"></label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        Zaloguj się
+                    </button>
+                </form>
+
+                <hr class="my-3" />
+
+                <p class="text-center mb-0 small">
+                    Nie masz konta? <a asp-action="Register">Zarejestruj się</a>
+                </p>
+            </div>
+        </div>
+
+        <div class="card mt-3 bg-light border">
+            <div class="card-body py-2 px-3 small text-muted">
+                <div class="fw-bold mb-1">Konta demonstracyjne:</div>
+                <div>Administrator: <code>Administrator</code> / <code>Admin123!</code></div>
+                <div>Użytkownik: <code>JanKowalski</code> / <code>User123!</code></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
